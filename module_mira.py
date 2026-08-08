@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 
 
 MIRA_ADDRESS = re.compile(r'^mira(?:[ :,\.!?]|$)', re.IGNORECASE)
+CHAT_CONTEXT_MAX_BYTES = 7_770
 
 
 class module_mira(GDO_Module):
@@ -117,6 +118,17 @@ class module_mira(GDO_Module):
                 lines.append(line)
         return ''.join(lines)
 
+    def read_context(self, path: str) -> str:
+        """Read a complete small chat file or the newest complete lines of a large one."""
+        if Files.size(path) <= CHAT_CONTEXT_MAX_BYTES:
+            return self.recent_context(Files.get_contents(path))
+
+        with open(path, 'rb') as file:
+            file.seek(-CHAT_CONTEXT_MAX_BYTES, 2)
+            payload = file.read().decode('utf-8', errors='replace')
+        # The first bytes may be a partial IBDES line; never show a broken line.
+        return self.recent_context(payload.partition('\n')[2])
+
     async def on_message(self, message: Message, out_instead_of_in: bool=False):
         channel = message._env_channel if message._env_channel else None
         if channel and not self.is_channel_enabled(channel):
@@ -142,7 +154,7 @@ class module_mira(GDO_Module):
         Files.append_content(path, ibdes)
 
         if MIRA_ADDRESS.match(payload) and out_instead_of_in == False:
-            payload = self.recent_context(Files.get_contents(path))
+            payload = self.read_context(path)
             if not payload:
                 Files.remove(path)
                 return

@@ -1,11 +1,12 @@
 import os
+import tempfile
 import unittest
 from unittest.mock import patch
 
 from gdo.base.Application import Application
 from gdo.base.ModuleLoader import ModuleLoader
 from gdo.core.connector.Bash import Bash
-from gdo.mira.module_mira import MIRA_ADDRESS, module_mira
+from gdo.mira.module_mira import CHAT_CONTEXT_MAX_BYTES, MIRA_ADDRESS, module_mira
 from gdo.mira.method.overview import overview
 from gdo.mira.util import send_to_mira
 from gdo.date.Time import Time
@@ -63,6 +64,21 @@ class module_mira_Test(GDOTestCase):
         recent = Time.get_date(Application.TIME - 1)
         payload = f'{old} #- old{{bash}} mira: stale\n{recent} #- gizmore{{bash}} mira: current\n'
         self.assertEqual(f'{recent} #- gizmore{{bash}} mira: current\n', mira.recent_context(payload))
+
+    def test_08_context_file_uses_full_small_file_and_complete_large_tail(self):
+        mira = module_mira.instance()
+        recent = Time.get_date(Application.TIME - 1)
+        line = f'{recent} #- gizmore{{bash}} mira: current\n'
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, 'chat.ibdes')
+            with open(path, 'w', encoding='utf-8') as file:
+                file.write(line)
+            self.assertEqual(line, mira.read_context(path))
+
+            filler = 'x' * CHAT_CONTEXT_MAX_BYTES
+            with open(path, 'w', encoding='utf-8') as file:
+                file.write(f'{recent} #- gizmore{{bash}} old {filler}\n{line}')
+            self.assertEqual(line, mira.read_context(path))
 
     def test_02_overview_web(self):
         giz =  cli_gizmore()
