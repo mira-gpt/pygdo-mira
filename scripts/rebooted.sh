@@ -46,6 +46,7 @@ set -u
 
 WORKDIR="/home/gizmore/www"
 LOG="/tmp/mira-start.log"
+LIVE_LOG="/home/mira/mira-live.log"
 TMUX_SESSION="mira-codex"
 
 printf '\033]0;MIRA\007'
@@ -79,6 +80,13 @@ if ! tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
     tmux new-session -d -s "$TMUX_SESSION" \
         "exec script --quiet --flush --return --append --command '$CODEX resume --last' '$LOG'"
 fi
+
+# Keep Codex attached to a real terminal, while capturing the rendered pane
+# output (including ANSI colour escapes) for convenient reading elsewhere.
+umask 077
+touch "$LIVE_LOG"
+chmod 600 "$LIVE_LOG"
+tmux pipe-pane -o -t "${TMUX_SESSION}:0.0" "cat >> '$LIVE_LOG'"
 
 tmux attach-session -t "$TMUX_SESSION"
 status=$?

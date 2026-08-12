@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from gdo.base.Application import Application
@@ -8,6 +9,7 @@ from gdo.base.ModuleLoader import ModuleLoader
 from gdo.core.connector.Bash import Bash
 from gdo.mira.module_mira import CHAT_CONTEXT_MAX_BYTES, MIRA_ADDRESS, module_mira
 from gdo.mira.method.overview import overview
+from gdo.mira.method.shadowlamb import shadowlamb
 from gdo.mira.util import send_to_mira
 from gdo.date.Time import Time
 from gdotest.TestUtil import cli_plug, reinstall_module, cli_gizmore, GDOTestCase, WebPlug, install_module, web_plug
@@ -79,6 +81,34 @@ class module_mira_Test(GDOTestCase):
             with open(path, 'w', encoding='utf-8') as file:
                 file.write(f'{recent} #- gizmore{{bash}} old {filler}\n{line}')
             self.assertEqual(line, mira.read_context(path))
+
+    def test_09_shadowlamb_filters_only_new_lamb3_replies(self):
+        payload = (
+            '2026-08-09 00:59:15.203041 #- Dog{wechall} .ping\n'
+            '2026-08-09 00:59:15.288864 #- Lamb3{wechall} pong!\n'
+            '2026-08-09 00:59:15.346493 #- other{wechall} nope\n'
+        )
+        self.assertEqual(
+            '2026-08-09 00:59:15.288864 #- Lamb3{wechall} pong!\n',
+            shadowlamb.reply_lines(payload, 'Lamb3'))
+
+    def test_10_health_reports_transitions_but_not_its_initial_baseline(self):
+        mira = module_mira.instance()
+        self.assertEqual([], mira.health_changes({'Telegram': True, 'WeChall': True}))
+        self.assertEqual([], mira.health_changes({'Telegram': True, 'WeChall': True}))
+        self.assertEqual([('Telegram', False)], mira.health_changes({'Telegram': False, 'WeChall': True}))
+
+    def test_11_shadowlamb_reads_only_appended_lamb3_replies(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'Lamb3.ibdes'
+            with open(path, 'w', encoding='utf-8') as file:
+                file.write('2026-08-09 #- Dog{wechall} .ping\n')
+            offset = os.path.getsize(path)
+            with open(path, 'a', encoding='utf-8') as file:
+                file.write('2026-08-09 #- Lamb3{wechall} pong!\n')
+            offset, replies = shadowlamb.read_new_replies(path, offset, 'Lamb3')
+            self.assertEqual(os.path.getsize(path), offset)
+            self.assertEqual('2026-08-09 #- Lamb3{wechall} pong!\n', replies)
 
     def test_02_overview_web(self):
         giz =  cli_gizmore()

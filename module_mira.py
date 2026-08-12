@@ -25,9 +25,13 @@ if TYPE_CHECKING:
 
 MIRA_ADDRESS = re.compile(r'^mira(?:[ :,\.!?]|$)', re.IGNORECASE)
 CHAT_CONTEXT_MAX_BYTES = 7_770
+SHADOWLAMB_POLL_DELAY = 0.25
+HEALTH_DELAY = 30
 
 
 class module_mira(GDO_Module):
+
+    HEALTH_STATES: dict[str, bool] = {}
 
     ##########
     # Module #
@@ -63,7 +67,7 @@ class module_mira(GDO_Module):
         return []
 
     def gdo_init(self):
-        pass
+        type(self).HEALTH_STATES = {}
 
     def gdo_load_scripts(self, page: 'GDT_Page'):
         self.add_js('js/pygdo-mira.js')
@@ -84,6 +88,8 @@ class module_mira(GDO_Module):
 
     def gdo_subscribe_events(self):
         Application.EVENTS.add_timer_async(self.cfg_heartbeat_delay(), self.mira_is_alive, 69_696_969)
+        Application.EVENTS.add_timer_async(HEALTH_DELAY, self.health_timer, Application.EVENTS.FOREVER)
+        Application.EVENTS.add_timer_async(SHADOWLAMB_POLL_DELAY, self.shadowlamb_timer, Application.EVENTS.FOREVER)
         Application.EVENTS.subscribe_times('new_message', self.on_new_message, 2_238_239_328)
         Application.EVENTS.subscribe_times('msg_sent', self.on_sent_message, 2_238_239_328)
         self.subscribe('clear_cache', self.on_cc)
@@ -94,6 +100,30 @@ class module_mira(GDO_Module):
     async def mira_is_alive(self):
         mira = await self.get_mira()
         await mira.send('huhu_mira')
+
+    async def shadowlamb_timer(self):
+        from gdo.mira.method.shadowlamb import shadowlamb
+        await shadowlamb.poll_servers()
+
+    def health_changes(self, states: dict[str, bool]) -> list[tuple[str, bool]]:
+        """Remember connector states and return only real transitions."""
+        previous = type(self).HEALTH_STATES
+        changes = [(name, connected) for name, connected in states.items()
+                   if name in previous and previous[name] != connected]
+        type(self).HEALTH_STATES = states
+        return changes
+
+    async def health_timer(self):
+        """Report enabled connector transitions locally, never into public chat."""
+        from gdo.core.method.launch import launch
+        states = {
+            server.get_name(): server.get_connector().is_connected()
+            for server in launch.SERVERS
+        }
+        for name, connected in self.health_changes(states):
+            state = 'up' if connected else 'down'
+            Logger.warning(f'Mira health: {name} is {state}.')
+            send_to_mira(f'$health {name} {state}')
 
     async def on_new_message(self, message: Message):
         await self.on_message(message, False)
@@ -133,6 +163,11 @@ class module_mira(GDO_Module):
         channel = message._env_channel if message._env_channel else None
         if channel and not self.is_channel_enabled(channel):
             return
+        context_user = getattr(message, '_env_target_user', message._env_user) if out_instead_of_in else message._env_user
+        author = message._env_user or context_user
+        if author is None:
+            Logger.warning('Ignoring Mira message without source or target user.')
+            return
         ibdes = Time.get_date()
 
         if channel:
@@ -142,11 +177,10 @@ class module_mira(GDO_Module):
         else:
             ibdes += ' #-'
 
-        ibdes += f" {message._env_user.get_name()}{{{message._env_user.get_server().get_name()}}}"
+        ibdes += f" {author.get_name()}{{{author.get_server().get_name()}}}"
         payload = (message._gdt_result.render_markdown() if message._gdt_result else message._result) if out_instead_of_in else message._message
         ibdes += f" {payload}\n"
 
-        context_user = getattr(message, '_env_target_user', message._env_user) if out_instead_of_in else message._env_user
         path = Application.temp_path(f'dog_mira/{message._env_server.get_name()}/')
         path += f"channel/{quote(channel.get_name(), safe='')}.ibdes" if channel else f"private/{quote(context_user.get_name(), safe='')}.ibdes"
 
