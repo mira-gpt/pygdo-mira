@@ -159,6 +159,11 @@ class module_mira(GDO_Module):
         # The first bytes may be a partial IBDES line; never show a broken line.
         return self.recent_context(payload.partition('\n')[2])
 
+    @staticmethod
+    def compact_chat_newlines(payload: str) -> str:
+        """Keep accidental blank chat lines from splitting one IBDES record."""
+        return re.sub(r'(?:\r\n|\r|\n){2,}', '\n', payload)
+
     async def on_message(self, message: Message, out_instead_of_in: bool=False):
         channel = message._env_channel if message._env_channel else None
         if channel and not self.is_channel_enabled(channel):
@@ -179,6 +184,7 @@ class module_mira(GDO_Module):
 
         ibdes += f" {author.get_name()}{{{author.get_server().get_name()}}}"
         payload = (message._gdt_result.render_markdown() if message._gdt_result else message._result) if out_instead_of_in else message._message
+        payload = self.compact_chat_newlines(payload)
         ibdes += f" {payload}\n"
 
         path = Application.temp_path(f'dog_mira/{message._env_server.get_name()}/')

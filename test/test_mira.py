@@ -82,6 +82,12 @@ class module_mira_Test(GDOTestCase):
                 file.write(f'{recent} #- gizmore{{bash}} old {filler}\n{line}')
             self.assertEqual(line, mira.read_context(path))
 
+    def test_08b_compacts_repeated_chat_newlines(self):
+        compact = module_mira.compact_chat_newlines
+        self.assertEqual('one\ntwo', compact('one\n\ntwo'))
+        self.assertEqual('one\ntwo', compact('one\r\n\r\ntwo'))
+        self.assertEqual('one\ntwo', compact('one\r\r\ntwo'))
+
     def test_09_shadowlamb_filters_only_new_lamb3_replies(self):
         payload = (
             '2026-08-09 00:59:15.203041 #- Dog{wechall} .ping\n'
