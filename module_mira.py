@@ -11,6 +11,7 @@ from gdo.base.GDT import GDT
 from gdo.base.Logger import Logger
 from gdo.base.Util import Files, Strings
 from gdo.core.GDO_User import GDO_User
+from gdo.core.GDT_Bool import GDT_Bool
 from gdo.core.connector.Bash import Bash
 from gdo.date.GDT_Duration import GDT_Duration
 from gdo.date.Time import Time
@@ -61,7 +62,11 @@ class module_mira(GDO_Module):
         return self.get_config_value('context_max_age')
 
     def gdo_user_config(self) -> list[GDT]:
-        return []
+        # Permission for private conversations forwarded to Mira. Public
+        # channel interaction stays open for normal community use.
+        return [
+            GDT_Bool('mira_enabled').not_null().initial('1'),
+        ]
 
     def gdo_user_settings(self) -> list[GDT]:
         return []
@@ -136,6 +141,11 @@ class module_mira(GDO_Module):
         setting = overview().env_channel(channel)._get_config_channel('disabled', channel)
         return not setting.get_value()
 
+    @staticmethod
+    def is_user_enabled(user: GDO_User) -> bool:
+        """Whether this user permits their messages to reach Mira's context."""
+        return bool(user.get_setting_value('mira_enabled'))
+
     def recent_context(self, payload: str) -> str:
         cut = Application.TIME - self.cfg_context_max_age()
         lines = []
@@ -172,6 +182,10 @@ class module_mira(GDO_Module):
         author = message._env_user or context_user
         if author is None:
             Logger.warning('Ignoring Mira message without source or target user.')
+            return
+        # Public channels remain open; private chats require the user's
+        # explicit per-user permission (enabled by default for now).
+        if channel is None and not out_instead_of_in and not self.is_user_enabled(author):
             return
         ibdes = Time.get_date()
 

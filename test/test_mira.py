@@ -35,6 +35,11 @@ class module_mira_Test(GDOTestCase):
     def test_01_heartbeat_delay(self):
         self.assertAlmostEqual(1337.420320, module_mira.instance().cfg_heartbeat_delay(), places=6)
 
+    def test_01b_users_may_talk_to_mira_by_default(self):
+        setting = next(gdt for gdt in module_mira.instance().gdo_user_config()
+                       if gdt.get_name() == 'mira_enabled')
+        self.assertEqual('1', setting.get_initial())
+
     def test_03_overview_cli(self):
         giz =  cli_gizmore()
         out = cli_plug(giz, "$mira.overview")
