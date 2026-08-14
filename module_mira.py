@@ -9,6 +9,7 @@ from gdo.base.GDO_Module import GDO_Module
 from gdo.base.GDO import GDO
 from gdo.base.GDT import GDT
 from gdo.base.Logger import Logger
+from gdo.base.Render import Mode
 from gdo.base.Util import Files, Strings
 from gdo.core.GDO_User import GDO_User
 from gdo.core.GDT_Bool import GDT_Bool
@@ -197,7 +198,11 @@ class module_mira(GDO_Module):
             ibdes += ' #-'
 
         ibdes += f" {author.get_name()}{{{author.get_server().get_name()}}}"
-        payload = (message._gdt_result.render_markdown() if message._gdt_result else message._result) if out_instead_of_in else message._message
+        # A method's return GDT is not necessarily its visible reply. Methods
+        # add success/errors to the page top bar and connectors render that bar
+        # in their own mode. IBDES is a terminal-oriented context stream, so
+        # preserve the same GDT-level contract with its CLI rendering.
+        payload = Application.get_page()._top_bar.render(Mode.render_cli) if out_instead_of_in else message._message
         payload = self.compact_chat_newlines(payload)
         ibdes += f" {payload}\n"
 
