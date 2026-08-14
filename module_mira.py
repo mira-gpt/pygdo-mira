@@ -175,6 +175,19 @@ class module_mira(GDO_Module):
         """Keep accidental blank chat lines from splitting one IBDES record."""
         return re.sub(r'(?:\r\n|\r|\n){2,}', '\n', payload)
 
+    @staticmethod
+    def ibdes_payload(message: Message, out_instead_of_in: bool) -> str:
+        """Return the visible text for one IBDES record.
+
+        Outbound connector messages already carry their rendered text in
+        ``_result``.  A command such as ``say.in`` has an empty method result
+        and therefore an empty page top bar; reading only the latter produced
+        useless blank Dog records in IBDES.
+        """
+        if not out_instead_of_in:
+            return message._message
+        return message._result or Application.get_page()._top_bar.render(Mode.render_cli)
+
     async def on_message(self, message: Message, out_instead_of_in: bool=False):
         channel = message._env_channel if message._env_channel else None
         if channel and not self.is_channel_enabled(channel):
@@ -198,12 +211,10 @@ class module_mira(GDO_Module):
             ibdes += ' #-'
 
         ibdes += f" {author.get_name()}{{{author.get_server().get_name()}}}"
-        # A method's return GDT is not necessarily its visible reply. Methods
-        # add success/errors to the page top bar and connectors render that bar
-        # in their own mode. IBDES is a terminal-oriented context stream, so
-        # preserve the same GDT-level contract with its CLI rendering.
-        payload = Application.get_page()._top_bar.render(Mode.render_cli) if out_instead_of_in else message._message
+        payload = self.ibdes_payload(message, out_instead_of_in)
         payload = self.compact_chat_newlines(payload)
+        if not payload.strip():
+            return
         ibdes += f" {payload}\n"
 
         path = Application.temp_path(f'dog_mira/{message._env_server.get_name()}/')

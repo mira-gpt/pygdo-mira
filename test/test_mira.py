@@ -2,6 +2,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from gdo.base.Application import Application
@@ -92,6 +93,11 @@ class module_mira_Test(GDOTestCase):
         self.assertEqual('one\ntwo', compact('one\n\ntwo'))
         self.assertEqual('one\ntwo', compact('one\r\n\r\ntwo'))
         self.assertEqual('one\ntwo', compact('one\r\r\ntwo'))
+
+    def test_08c_outbound_ibdes_uses_connector_payload(self):
+        message = SimpleNamespace(_message='$say.in 5 --prefix=0 hello', _result='hello')
+        self.assertEqual('hello', module_mira.ibdes_payload(message, True))
+        self.assertEqual('$say.in 5 --prefix=0 hello', module_mira.ibdes_payload(message, False))
 
     def test_09_shadowlamb_filters_only_new_lamb3_replies(self):
         payload = (
