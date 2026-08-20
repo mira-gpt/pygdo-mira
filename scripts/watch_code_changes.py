@@ -1,5 +1,5 @@
 #!/home/gizmore/www/pygdo/.venv/bin/python
-"""Notify Mira after a Python source file has been quiet for a debounce period."""
+"""Notify Mira after watched files have been quiet for a debounce period."""
 
 from __future__ import annotations
 
@@ -112,9 +112,11 @@ class Inotify:
 
 
 class CodeChangeWatcher:
-    def __init__(self, root: Path, delay: float):
+    def __init__(self, root: Path, delay: float, suffix: str | None, event: str):
         self.root = root.resolve()
         self.delay = delay
+        self.suffix = suffix
+        self.event = event
         self.inotify = Inotify()
         self.paths: dict[int, Path] = {}
         self.deadlines: dict[Path, float] = {}
@@ -137,7 +139,7 @@ class CodeChangeWatcher:
             if report_existing:
                 for filename in files:
                     path = current_path / filename
-                    if path.suffix == '.py':
+                    if self.wanted_file(path):
                         self.changed(path)
 
     def changed(self, path: Path) -> None:
@@ -145,6 +147,9 @@ class CodeChangeWatcher:
         deadline = time.monotonic() + self.delay
         self.deadlines[path] = deadline
         heapq.heappush(self.queue, (deadline, path))
+
+    def wanted_file(self, path: Path) -> bool:
+        return self.suffix is None or path.suffix == self.suffix
 
     def flush_changes(self) -> None:
         now = time.monotonic()
@@ -157,7 +162,7 @@ class CodeChangeWatcher:
                 print(f'acknowledged: {path}', flush=True)
                 continue
             try:
-                send_to_mira(f'$changes {path}')
+                send_to_mira(f'{self.event} {path}')
                 print(f'notified: {path}', flush=True)
             except Exception as error:
                 print(f'watch_code_changes: could not notify for {path}: {error}', file=sys.stderr, flush=True)
@@ -182,12 +187,13 @@ class CodeChangeWatcher:
                 if mask & (IN_CREATE | IN_MOVED_TO):
                     self.add_tree(path, report_existing=True)
                 continue
-            if path.suffix == '.py' and mask & (IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_DELETE):
+            if self.wanted_file(path) and mask & (IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE | IN_DELETE):
                 self.changed(path)
 
     def run(self) -> None:
         self.add_tree(self.root)
-        print(f'watching {self.root}/**/*.py (debounce {self.delay:g}s)', flush=True)
+        pattern = f'*{self.suffix}' if self.suffix else '*'
+        print(f'watching {self.root}/**/{pattern} (debounce {self.delay:g}s; event {self.event})', flush=True)
         while True:
             ready, _unused, _errors = select.select([self.inotify.fd], [], [], self.timeout())
             if ready:
@@ -198,25 +204,31 @@ class CodeChangeWatcher:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dir', default='/home/gizmore/www/pygdo', type=Path,
-                        help='PyGDO project directory; its gdo/ subtree is watched')
+                        help='PyGDO project directory; its gdo/ subtree is watched by default')
+    parser.add_argument('--root', type=Path,
+                        help='watch this directory directly instead of <dir>/gdo')
+    parser.add_argument('--all-files', action='store_true',
+                        help='watch all regular files instead of only Python source')
+    parser.add_argument('--event', default='$changes',
+                        help='Mira event prefix to emit for a settled change')
     parser.add_argument('--time', default=180.0, type=float,
                         help='quiet time in seconds before notifying (default: 180)')
     parser.add_argument('--ack', type=Path, metavar='PATH',
-                        help='acknowledge the current revision of one Python source file and exit')
+                        help='acknowledge the current revision of one watched file and exit')
     args = parser.parse_args()
     if args.time <= 0:
         parser.error('--time must be positive')
-    source_root = args.dir.resolve() / 'gdo'
+    source_root = args.root.resolve() if args.root else args.dir.resolve() / 'gdo'
     if not source_root.is_dir():
         parser.error(f'no gdo directory under {args.dir}')
     if args.ack:
         path = args.ack.resolve(strict=False)
-        if path.suffix != '.py' or not path.is_relative_to(source_root):
-            parser.error(f'--ack path must be a Python file inside {source_root}')
+        if (not args.all_files and path.suffix != '.py') or not path.is_relative_to(source_root):
+            parser.error(f'--ack path must be a watched file inside {source_root}')
         ChangeAcknowledgements().acknowledge(path, time.time() + max(60, args.time * 2))
         print(f'acknowledged revision: {path}')
         return 0
-    CodeChangeWatcher(source_root, args.time).run()
+    CodeChangeWatcher(source_root, args.time, None if args.all_files else '.py', args.event).run()
     return 0
 
 

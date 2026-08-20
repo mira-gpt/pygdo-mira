@@ -195,7 +195,7 @@ class module_mira(GDO_Module):
         context_user = getattr(message, '_env_target_user', message._env_user) if out_instead_of_in else message._env_user
         author = message._env_user or context_user
         if author is None:
-            Logger.warning('Ignoring Mira message without source or target user.')
+            Logger.error('Ignoring Mira message without source or target user.')
             return
         # Public channels remain open; private chats require the user's
         # explicit per-user permission (enabled by default for now).
