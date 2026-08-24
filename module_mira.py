@@ -188,6 +188,17 @@ class module_mira(GDO_Module):
             return message._message
         return message._result or Application.get_page()._top_bar.render(Mode.render_cli)
 
+    @staticmethod
+    def ibdes_channel(channel) -> str:
+        """Render the canonical reply target for an IBDES record.
+
+        A persisted channel ID is stable and can be passed directly to
+        ``say.in``. Display names and connector-specific channel names are
+        deliberately omitted here: they require a lookup and may be
+        ambiguous across connectors.
+        """
+        return f'#{channel.get_id()}' if channel else '#-'
+
     async def on_message(self, message: Message, out_instead_of_in: bool=False):
         channel = message._env_channel if message._env_channel else None
         if channel and not self.is_channel_enabled(channel):
@@ -203,12 +214,7 @@ class module_mira(GDO_Module):
             return
         ibdes = Time.get_date()
 
-        if channel:
-            ibdes += " " + channel.get_name()
-            if channel.get_server() != message._env_server:
-                ibdes += f" {channel.get_server().get_name()}"
-        else:
-            ibdes += ' #-'
+        ibdes += ' ' + self.ibdes_channel(channel)
 
         ibdes += f" {author.get_name()}{{{author.get_server().get_name()}}}"
         payload = self.ibdes_payload(message, out_instead_of_in)

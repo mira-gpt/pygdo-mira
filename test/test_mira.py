@@ -62,6 +62,11 @@ class module_mira_Test(GDOTestCase):
         overview().env_channel(channel).save_config_channel('disabled', '0')
         self.assertTrue(mira.is_channel_enabled(channel))
 
+    def test_05b_ibdes_uses_canonical_channel_id(self):
+        channel = Bash.get_server().get_or_create_channel('mira_ibdes_id_test')
+        self.assertEqual(f'#{channel.get_id()}', module_mira.ibdes_channel(channel))
+        self.assertEqual('#-', module_mira.ibdes_channel(None))
+
     def test_06_mira_address_accepts_natural_punctuation(self):
         for text in ('mira', 'Mira:', 'mira....', 'Mira?'):
             self.assertIsNotNone(MIRA_ADDRESS.match(text), text)
