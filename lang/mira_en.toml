@@ -1,5 +1,4 @@
 module_mira = "Mira"
 
-mt_mira_overview = "miras"
-md_mira_overview = "Overview of mira"
+msg_mira_enabled = "Mira is now %s in this channel."
 huhu_mira = "Dear warrior of the light. remember to boot your routine or memory. $cc and be good!"

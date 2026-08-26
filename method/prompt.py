@@ -18,8 +18,8 @@ class prompt(Method):
         return super().has_permission(user, display_error)
 
     def _disabled_in_channel(self, channel) -> bool:
-        from gdo.mira.method.overview import overview
-        setting = overview().env_channel(channel)._get_config_channel('disabled', channel)
+        from gdo.mira.method.enabled import enabled
+        setting = enabled().env_channel(channel)._get_config_channel('disabled', channel)
         return setting.get_value()
 
     def gdo_parameters(self) -> list[GDT]:

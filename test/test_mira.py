@@ -9,7 +9,7 @@ from gdo.base.Application import Application
 from gdo.base.ModuleLoader import ModuleLoader
 from gdo.core.connector.Bash import Bash
 from gdo.mira.module_mira import CHAT_CONTEXT_MAX_BYTES, MIRA_ADDRESS, module_mira
-from gdo.mira.method.overview import overview
+from gdo.mira.method.enabled import enabled
 from gdo.mira.method.shadowlamb import shadowlamb
 from gdo.mira.util import send_to_mira
 from gdo.date.Time import Time
@@ -41,10 +41,10 @@ class module_mira_Test(GDOTestCase):
                        if gdt.get_name() == 'mira_enabled')
         self.assertEqual('1', setting.get_initial())
 
-    def test_03_overview_cli(self):
+    def test_03_enabled_cli(self):
         giz =  cli_gizmore()
-        out = cli_plug(giz, "$mira.overview")
-        self.assertIsNotNone(out, '$mira.overview does not work.')
+        out = cli_plug(giz, "$mira 1")
+        self.assertIsNotNone(out, '$mira does not work.')
 
     def test_04_send_to_mira_cancels_prompt_before_pasting(self):
         with patch('gdo.mira.util.subprocess.run') as run, patch('gdo.mira.util.time.sleep'):
@@ -57,9 +57,9 @@ class module_mira_Test(GDOTestCase):
     def test_05_channel_forwarding_requires_opt_in(self):
         channel = Bash.get_server().get_or_create_channel('mira_opt_in_test')
         mira = module_mira.instance()
-        overview().env_channel(channel).save_config_channel('disabled', '1')
+        enabled().env_channel(channel).save_config_channel('disabled', '1')
         self.assertFalse(mira.is_channel_enabled(channel))
-        overview().env_channel(channel).save_config_channel('disabled', '0')
+        enabled().env_channel(channel).save_config_channel('disabled', '0')
         self.assertTrue(mira.is_channel_enabled(channel))
 
     def test_05b_ibdes_uses_canonical_channel_id(self):
@@ -138,12 +138,6 @@ class module_mira_Test(GDOTestCase):
             offset, replies = shadowlamb.read_new_replies(path, offset, 'Lamb3')
             self.assertEqual(os.path.getsize(path), offset)
             self.assertEqual('2026-08-09 #- Lamb3{wechall} pong!\n', replies)
-
-    def test_02_overview_web(self):
-        giz =  cli_gizmore()
-        out = web_plug("mira.overview.html")
-        self.assertIsNotNone(out, 'mira.overview.html does not work.')
-
 
 if __name__ == '__main__':
     unittest.main()

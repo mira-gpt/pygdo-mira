@@ -17,7 +17,6 @@ from gdo.core.connector.Bash import Bash
 from gdo.date.GDT_Duration import GDT_Duration
 from gdo.date.Time import Time
 from gdo.mira.util import send_to_mira
-from gdo.ui.GDT_Link import GDT_Link
 
 from typing import TYPE_CHECKING
 
@@ -79,9 +78,6 @@ class module_mira(GDO_Module):
         self.add_js('js/pygdo-mira.js')
         self.add_css('css/pygdo-mira.css')
 
-    def gdo_init_sidebar(self, page: 'GDT_Page'):
-        page._left_bar.add_field(GDT_Link().href(self.href('overview')).text('module_mira'))
-
     ##########
     # Events #
     ##########
@@ -138,8 +134,8 @@ class module_mira(GDO_Module):
         await self.on_message(message, True)
 
     def is_channel_enabled(self, channel) -> bool:
-        from gdo.mira.method.overview import overview
-        setting = overview().env_channel(channel)._get_config_channel('disabled', channel)
+        from gdo.mira.method.enabled import enabled
+        setting = enabled().env_channel(channel)._get_config_channel('disabled', channel)
         return not setting.get_value()
 
     @staticmethod
