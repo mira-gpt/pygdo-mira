@@ -67,6 +67,13 @@ class module_mira_Test(GDOTestCase):
         self.assertEqual(f'#{channel.get_id()}', module_mira.ibdes_channel(channel))
         self.assertEqual('#-', module_mira.ibdes_channel(None))
 
+    def test_05c_ibdes_keeps_the_incoming_reply_connector(self):
+        effective = SimpleNamespace(name='gizmore-web')
+        reply_to = SimpleNamespace(name='gizmore-ws')
+        message = SimpleNamespace(_env_user=effective, _env_reply_to=reply_to, _env_target_user=None)
+        self.assertIs(reply_to, module_mira.ibdes_author(message, False))
+        self.assertIs(effective, module_mira.ibdes_author(message, True))
+
     def test_06_mira_address_accepts_natural_punctuation(self):
         for text in ('mira', 'Mira:', 'mira....', 'Mira?'):
             self.assertIsNotNone(MIRA_ADDRESS.match(text), text)

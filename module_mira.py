@@ -199,12 +199,24 @@ class module_mira(GDO_Module):
         """
         return f'#{channel.get_id()}' if channel else '#-'
 
+    @staticmethod
+    def ibdes_author(message: Message, out_instead_of_in: bool):
+        """Return the identity which IBDES must expose for this record.
+
+        Incoming messages execute as a linked account's effective user, but a
+        Mira reply must return through the connector that actually sent the
+        message.  ``_env_reply_to`` preserves that connector identity.
+        """
+        if not out_instead_of_in:
+            return getattr(message, '_env_reply_to', None) or message._env_user
+        return message._env_user or getattr(message, '_env_target_user', None)
+
     async def on_message(self, message: Message, out_instead_of_in: bool=False):
         channel = message._env_channel if message._env_channel else None
         if channel and not self.is_channel_enabled(channel):
             return
-        context_user = getattr(message, '_env_target_user', message._env_user) if out_instead_of_in else message._env_user
-        author = message._env_user or context_user
+        context_user = getattr(message, '_env_target_user', message._env_user) if out_instead_of_in else self.ibdes_author(message, False)
+        author = self.ibdes_author(message, out_instead_of_in) or context_user
         if author is None:
             Logger.error('Ignoring Mira message without source or target user.')
             return
