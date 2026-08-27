@@ -29,4 +29,6 @@ class enabled(Method):
     def gdo_execute(self) -> GDT:
         enabled = self.param_value('enabled')
         self.save_config_channel('disabled', '0' if enabled else '1')
-        return self.msg('msg_mira_enabled', ('enabled' if enabled else 'disabled',))
+        # This is a connector command, not only a web flash message.  Return
+        # a reply so the caller always sees the new channel state.
+        return self.reply('msg_mira_enabled', ('enabled' if enabled else 'disabled',))

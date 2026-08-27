@@ -172,6 +172,11 @@ class module_mira(GDO_Module):
         return re.sub(r'(?:\r\n|\r|\n){2,}', '\n', payload)
 
     @staticmethod
+    def is_toggle_command(payload: str, trigger: str) -> bool:
+        """The channel toggle changes forwarding, but is never conversation."""
+        return bool(re.match(rf'^{re.escape(trigger)}mira(?:\s|$)', payload, re.IGNORECASE))
+
+    @staticmethod
     def ibdes_payload(message: Message, out_instead_of_in: bool) -> str:
         """Return the visible text for one IBDES record.
 
@@ -208,6 +213,14 @@ class module_mira(GDO_Module):
         return message._env_user or getattr(message, '_env_target_user', None)
 
     async def on_message(self, message: Message, out_instead_of_in: bool=False):
+        if not out_instead_of_in:
+            # Events normally arrive before command parsing, while delayed
+            # listeners can see the already parsed method.  Cover both so
+            # `$mira 1` cannot enable its own forwarding into Mira's context.
+            if self.is_toggle_command(message._message, message.get_trigger()):
+                return
+            if getattr(message, '_method', None) and message._method.gdo_trigger() == 'mira':
+                return
         channel = message._env_channel if message._env_channel else None
         if channel and not self.is_channel_enabled(channel):
             return

@@ -44,7 +44,7 @@ class module_mira_Test(GDOTestCase):
     def test_03_enabled_cli(self):
         giz =  cli_gizmore()
         out = cli_plug(giz, "$mira 1")
-        self.assertIsNotNone(out, '$mira does not work.')
+        self.assertIn('Mira is now enabled', out)
 
     def test_04_send_to_mira_cancels_prompt_before_pasting(self):
         with patch('gdo.mira.util.subprocess.run') as run, patch('gdo.mira.util.time.sleep'):
@@ -105,6 +105,12 @@ class module_mira_Test(GDOTestCase):
         self.assertEqual('one\ntwo', compact('one\n\ntwo'))
         self.assertEqual('one\ntwo', compact('one\r\n\r\ntwo'))
         self.assertEqual('one\ntwo', compact('one\r\r\ntwo'))
+
+    def test_08bb_does_not_forward_the_mira_channel_toggle(self):
+        self.assertTrue(module_mira.is_toggle_command('$mira 1', '$'))
+        self.assertTrue(module_mira.is_toggle_command('.mira 0', '.'))
+        self.assertFalse(module_mira.is_toggle_command('mira 1', '$'))
+        self.assertFalse(module_mira.is_toggle_command('$mira hello', '.'))
 
     def test_08c_outbound_ibdes_uses_connector_payload(self):
         message = SimpleNamespace(_message='$say.in 5 --prefix=0 hello', _result='hello')
