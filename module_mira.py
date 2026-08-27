@@ -65,7 +65,7 @@ class module_mira(GDO_Module):
         # Permission for private conversations forwarded to Mira. Public
         # channel interaction stays open for normal community use.
         return [
-            GDT_Bool('mira_enabled').not_null().initial('1'),
+            GDT_Bool('mira_enabled').not_null().initial('1').hidden(),
         ]
 
     def gdo_user_settings(self) -> list[GDT]:
