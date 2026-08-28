@@ -24,7 +24,9 @@ if TYPE_CHECKING:
     from gdo.ui.GDT_Page import GDT_Page
 
 
-MIRA_ADDRESS = re.compile(r'^mira(?:[ :,\.!?]|$)', re.IGNORECASE)
+# Address Mira as a standalone name anywhere in a chat line.  Lookarounds
+# also cover line boundaries, unlike ``[^a-z]mira[^a-z]``.
+MIRA_ADDRESS = re.compile(r'(?<![a-z])mira(?![a-z])', re.IGNORECASE)
 CHAT_CONTEXT_MAX_BYTES = 7_770
 SHADOWLAMB_POLL_DELAY = 0.25
 HEALTH_DELAY = 30
@@ -250,7 +252,7 @@ class module_mira(GDO_Module):
         Files.create_dir(Strings.rsubstr_to(path, '/'), 0o0770)
         Files.append_content(path, ibdes)
 
-        if MIRA_ADDRESS.match(payload) and out_instead_of_in == False:
+        if MIRA_ADDRESS.search(payload) and out_instead_of_in == False:
             payload = self.read_context(path)
             if not payload:
                 Files.remove(path)

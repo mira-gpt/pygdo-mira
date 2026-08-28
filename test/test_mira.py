@@ -75,8 +75,10 @@ class module_mira_Test(GDOTestCase):
         self.assertIs(effective, module_mira.ibdes_author(message, True))
 
     def test_06_mira_address_accepts_natural_punctuation(self):
-        for text in ('mira', 'Mira:', 'mira....', 'Mira?'):
-            self.assertIsNotNone(MIRA_ADDRESS.match(text), text)
+        for text in ('mira', 'Mira:', 'mira....', 'Mira?', 'hello, mira!', 'tell mira this'):
+            self.assertIsNotNone(MIRA_ADDRESS.search(text), text)
+        for text in ('mirage', 'Amira', 'miras'):
+            self.assertIsNone(MIRA_ADDRESS.search(text), text)
 
     def test_07_context_discards_expired_lines(self):
         mira = module_mira.instance()
