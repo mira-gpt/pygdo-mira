@@ -6,4 +6,4 @@ project_dir=/home/gizmore/www/pygdo
 log_file=/home/mira/dog-live.log
 
 mkdir -p -- "$(dirname -- "$log_file")"
-exec "$project_dir/bin/mira" '$launch' "$@" >>"$log_file" 2>&1
+exec "$project_dir/bin/mira" '.launch' "$@" >>"$log_file" 2>&1
