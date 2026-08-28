@@ -10,6 +10,7 @@ from gdo.base.ModuleLoader import ModuleLoader
 from gdo.core.connector.Bash import Bash
 from gdo.mira.module_mira import CHAT_CONTEXT_MAX_BYTES, MIRA_ADDRESS, module_mira
 from gdo.mira.method.enabled import enabled
+from gdo.mira.method.heartbeat import heartbeat
 from gdo.mira.method.shadowlamb import shadowlamb
 from gdo.mira.util import send_to_mira
 from gdo.date.Time import Time
@@ -61,6 +62,27 @@ class module_mira_Test(GDOTestCase):
         self.assertFalse(mira.is_channel_enabled(channel))
         enabled().env_channel(channel).save_config_channel('disabled', '0')
         self.assertTrue(mira.is_channel_enabled(channel))
+
+    def test_05a_heartbeat_is_channel_only_and_disabled_by_default(self):
+        channel = Bash.get_server().get_or_create_channel('mira_heartbeat_test')
+        method = heartbeat().env_channel(channel)
+        self.assertEqual('1', heartbeat._config_channel_for('disabled').get_initial())
+        # The test channel may survive a prior test run, so establish the
+        # expected disabled state before testing the explicit opt-in.
+        method.save_config_channel('disabled', '1')
+        self.assertTrue(method.get_config_channel_value('disabled'))
+        self.assertEqual(194, method.get_config_channel_value('delay'))
+        mira = module_mira.instance()
+        enabled().env_channel(channel).save_config_channel('disabled', '1')
+        self.assertFalse(mira.heartbeat_enabled(channel))
+        enabled().env_channel(channel).save_config_channel('disabled', '0')
+        method.save_config_channel('disabled', '0')
+        self.assertFalse(method.get_config_channel_value('disabled'))
+        self.assertTrue(mira.heartbeat_enabled(channel))
+        mira.reset_heartbeat(channel, 100)
+        self.assertFalse(mira.heartbeat_due(channel, 100, 293))
+        self.assertTrue(mira.heartbeat_due(channel, 100, 294))
+        self.assertEqual('hb', heartbeat.gdo_trig())
 
     def test_05b_ibdes_uses_canonical_channel_id(self):
         channel = Bash.get_server().get_or_create_channel('mira_ibdes_id_test')

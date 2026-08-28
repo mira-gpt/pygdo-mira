@@ -30,11 +30,14 @@ MIRA_ADDRESS = re.compile(r'(?<![a-z])mira(?![a-z])', re.IGNORECASE)
 CHAT_CONTEXT_MAX_BYTES = 7_770
 SHADOWLAMB_POLL_DELAY = 0.25
 HEALTH_DELAY = 30
+HEARTBEAT_CHECK_DELAY = 1
 
 
 class module_mira(GDO_Module):
 
     HEALTH_STATES: dict[str, bool] = {}
+    HEARTBEAT_ACTIVITY: dict[str, tuple] = {}
+    HEARTBEAT_SENT: set[str] = set()
 
     ##########
     # Module #
@@ -75,6 +78,8 @@ class module_mira(GDO_Module):
 
     def gdo_init(self):
         type(self).HEALTH_STATES = {}
+        type(self).HEARTBEAT_ACTIVITY = {}
+        type(self).HEARTBEAT_SENT = set()
 
     def gdo_load_scripts(self, page: 'GDT_Page'):
         self.add_js('js/pygdo-mira.js')
@@ -93,6 +98,7 @@ class module_mira(GDO_Module):
     def gdo_subscribe_events(self):
         # Application.EVENTS.add_timer_async(self.cfg_heartbeat_delay(), self.mira_is_alive, 69_696_969)
         Application.EVENTS.add_timer_async(HEALTH_DELAY, self.health_timer, Application.EVENTS.FOREVER)
+        Application.EVENTS.add_timer_async(HEARTBEAT_CHECK_DELAY, self.heartbeat_timer, Application.EVENTS.FOREVER)
         Application.EVENTS.add_timer_async(SHADOWLAMB_POLL_DELAY, self.shadowlamb_timer, Application.EVENTS.FOREVER)
         Application.EVENTS.subscribe_times('new_message', self.on_new_message, 2_238_239_328)
         Application.EVENTS.subscribe_times('msg_sent', self.on_sent_message, 2_238_239_328)
@@ -130,6 +136,7 @@ class module_mira(GDO_Module):
             send_to_mira(f'$health {name} {state}')
 
     async def on_new_message(self, message: Message):
+        self.reset_heartbeat(message._env_channel)
         await self.on_message(message, False)
 
     async def on_sent_message(self, message: Message):
@@ -139,6 +146,63 @@ class module_mira(GDO_Module):
         from gdo.mira.method.enabled import enabled
         setting = enabled().env_channel(channel)._get_config_channel('disabled', channel)
         return not setting.get_value()
+
+    @staticmethod
+    def heartbeat_method(channel):
+        from gdo.mira.method.heartbeat import heartbeat
+        return heartbeat().env_channel(channel)
+
+    def heartbeat_enabled(self, channel) -> bool:
+        if channel is None:
+            return False
+        return (self.is_channel_enabled(channel) and
+                not self.heartbeat_method(channel).get_config_channel_value('disabled'))
+
+    def reset_heartbeat(self, channel, now: float | None = None):
+        """Record channel activity and allow one later idle notification."""
+        if not self.heartbeat_enabled(channel):
+            return
+        now = Application.TIME if now is None else now
+        channel_id = channel.get_id()
+        type(self).HEARTBEAT_ACTIVITY[channel_id] = (channel, now)
+        type(self).HEARTBEAT_SENT.discard(channel_id)
+
+    def heartbeat_due(self, channel, last_activity: float, now: float | None = None) -> bool:
+        """A channel receives at most one heartbeat until new activity arrives."""
+        now = Application.TIME if now is None else now
+        delay = self.heartbeat_method(channel).get_config_channel_value('delay')
+        return now - last_activity >= delay
+
+    @staticmethod
+    def channel_context_path(channel) -> str:
+        path = Application.temp_path(f'dog_mira/{channel.get_server().get_name()}/channel/')
+        return path + f'{quote(channel.get_name(), safe="")}.ibdes'
+
+    def heartbeat_payload(self, channel) -> str:
+        """Include the same recent IBDES history used for ordinary chat turns."""
+        path = self.channel_context_path(channel)
+        if not Files.exists(path):
+            return ''
+        return self.read_context(path)
+
+    async def heartbeat_timer(self):
+        for channel_id, (channel, last_activity) in list(type(self).HEARTBEAT_ACTIVITY.items()):
+            if not self.heartbeat_enabled(channel):
+                type(self).HEARTBEAT_ACTIVITY.pop(channel_id, None)
+                type(self).HEARTBEAT_SENT.discard(channel_id)
+                continue
+            if channel_id not in type(self).HEARTBEAT_SENT and self.heartbeat_due(channel, last_activity):
+                # This is a private local prompt for Mira, not an unsolicited
+                # channel message. Mira decides whether the silence merits a reply.
+                try:
+                    payload = self.heartbeat_payload(channel)
+                    if not payload:
+                        continue
+                    send_to_mira(f'$heartbeat #{channel_id}\n{payload}')
+                except Exception as error:
+                    Logger.exception(error)
+                else:
+                    type(self).HEARTBEAT_SENT.add(channel_id)
 
     @staticmethod
     def is_user_enabled(user: GDO_User) -> bool:
