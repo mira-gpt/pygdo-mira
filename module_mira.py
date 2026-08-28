@@ -89,7 +89,7 @@ class module_mira(GDO_Module):
         return await Bash.get_server().get_or_create_user('mira')
 
     def gdo_subscribe_events(self):
-        Application.EVENTS.add_timer_async(self.cfg_heartbeat_delay(), self.mira_is_alive, 69_696_969)
+        # Application.EVENTS.add_timer_async(self.cfg_heartbeat_delay(), self.mira_is_alive, 69_696_969)
         Application.EVENTS.add_timer_async(HEALTH_DELAY, self.health_timer, Application.EVENTS.FOREVER)
         Application.EVENTS.add_timer_async(SHADOWLAMB_POLL_DELAY, self.shadowlamb_timer, Application.EVENTS.FOREVER)
         Application.EVENTS.subscribe_times('new_message', self.on_new_message, 2_238_239_328)
@@ -99,9 +99,9 @@ class module_mira(GDO_Module):
     async def on_cc(self):
         pass  # Conversations shall survive a cache clear and Dog restart.
 
-    async def mira_is_alive(self):
-        mira = await self.get_mira()
-        await mira.send('huhu_mira')
+    # async def mira_is_alive(self):
+    #     mira = await self.get_mira()
+    #     await mira.send('huhu_mira')
 
     async def shadowlamb_timer(self):
         from gdo.mira.method.shadowlamb import shadowlamb

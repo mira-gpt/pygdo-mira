@@ -10,6 +10,7 @@ from gdo.core.GDO_Server import GDO_Server
 from gdo.core.GDO_User import GDO_User
 from gdo.core.GDT_Name import GDT_Name
 from gdo.core.GDT_RestOfText import GDT_RestOfText
+from gdo.core.method.launch import launch
 from gdo.mira.util import send_to_mira
 
 
@@ -30,9 +31,9 @@ class shadowlamb(Method):
         """Mira's authenticated TCP identity may carry a virtual channel context."""
         return True
 
-    def _disabled_in_server(self, server: GDO_Server) -> bool:
-        """The local TCP control channel selects an explicitly configured target server."""
-        return False if server.get_name() == 'netcat' else super()._disabled_in_server(server)
+    # def _disabled_in_server(self, server: GDO_Server) -> bool:
+    #     """The local TCP control channel selects an explicitly configured target server."""
+    #     return False if server.get_name() == 'netcat' else super()._disabled_in_server(server)
 
     def gdo_parameters(self) -> list[GDT]:
         return [GDT_RestOfText('command').not_null()]
@@ -94,7 +95,7 @@ class shadowlamb(Method):
     @classmethod
     async def poll_servers(cls):
         """Check one configured Lamb3 private log per explicitly enabled server."""
-        for server in GDO_Server.table().all('serv_enabled'):
+        for server in launch.SERVERS:
             method = cls().env_server(server)
             if method.get_config_server_value('disabled'):
                 continue
