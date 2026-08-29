@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from gdo.base.Application import Application
 from gdo.base.ModuleLoader import ModuleLoader
+from gdo.base.Util import Files
 from gdo.core.connector.Bash import Bash
 from gdo.mira.module_mira import CHAT_CONTEXT_MAX_BYTES, MIRA_ADDRESS, module_mira
 from gdo.mira.method.enabled import enabled
@@ -95,6 +96,35 @@ class module_mira_Test(GDOTestCase):
         message = SimpleNamespace(_env_user=effective, _env_reply_to=reply_to, _env_target_user=None)
         self.assertIs(reply_to, module_mira.ibdes_author(message, False))
         self.assertIs(effective, module_mira.ibdes_author(message, True))
+
+    def test_05cc_discards_only_cross_connector_input_mirrors(self):
+        mira = module_mira.instance()
+        type(mira).INBOUND_CONTEXT = {}
+        channel = SimpleNamespace(get_id=lambda: '7')
+        account = SimpleNamespace(get_id=lambda: '5')
+        irc = SimpleNamespace(get_id=lambda: '9')
+        web = SimpleNamespace(get_id=lambda: '2')
+        self.assertFalse(mira.is_mirrored_inbound(channel, account, irc, 'she is back', 100))
+        self.assertTrue(mira.is_mirrored_inbound(channel, account, web, 'she is back', 100.1))
+        self.assertFalse(mira.is_mirrored_inbound(channel, account, web, 'she is back', 100.2))
+
+    async def test_05d_heartbeat_consumes_the_delivered_context(self):
+        """A later idle wake-up must not replay already delivered chat."""
+        channel = Bash.get_server().get_or_create_channel('mira_heartbeat_consume_test')
+        mira = module_mira.instance()
+        enabled().env_channel(channel).save_config_channel('disabled', '0')
+        heartbeat().env_channel(channel).save_config_channel('disabled', '0')
+        path = mira.channel_context_path(channel)
+        Files.create_dir(os.path.dirname(path), 0o0770)
+        Files.put_contents(path, f'{Time.get_date()} #{channel.get_id()} gizmore{{bash}} hello\n')
+        type(mira).HEARTBEAT_ACTIVITY = {channel.get_id(): (channel, 0)}
+        type(mira).HEARTBEAT_SENT = set()
+
+        with patch('gdo.mira.module_mira.send_to_mira') as send:
+            await mira.heartbeat_timer()
+
+        send.assert_called_once()
+        self.assertFalse(Files.exists(path))
 
     def test_06_mira_address_accepts_natural_punctuation(self):
         for text in ('mira', 'Mira:', 'mira....', 'Mira?', 'hello, mira!', 'tell mira this'):

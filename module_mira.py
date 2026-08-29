@@ -31,6 +31,10 @@ CHAT_CONTEXT_MAX_BYTES = 7_770
 SHADOWLAMB_POLL_DELAY = 0.25
 HEALTH_DELAY = 30
 HEARTBEAT_CHECK_DELAY = 1
+# A WebSocket/Web mirror of an IRC line can arrive a few milliseconds after
+# the original line.  Keep it out of Mira's conversational context without
+# suppressing a deliberate repeated line on the same connector.
+INBOUND_MIRROR_WINDOW = 1.0
 
 
 class module_mira(GDO_Module):
@@ -38,6 +42,7 @@ class module_mira(GDO_Module):
     HEALTH_STATES: dict[str, bool] = {}
     HEARTBEAT_ACTIVITY: dict[str, tuple] = {}
     HEARTBEAT_SENT: set[str] = set()
+    INBOUND_CONTEXT: dict[tuple[str, str, str], tuple[str, float]] = {}
 
     ##########
     # Module #
@@ -80,6 +85,7 @@ class module_mira(GDO_Module):
         type(self).HEALTH_STATES = {}
         type(self).HEARTBEAT_ACTIVITY = {}
         type(self).HEARTBEAT_SENT = set()
+        type(self).INBOUND_CONTEXT = {}
 
     def gdo_load_scripts(self, page: 'GDT_Page'):
         self.add_js('js/pygdo-mira.js')
@@ -195,10 +201,15 @@ class module_mira(GDO_Module):
                 # This is a private local prompt for Mira, not an unsolicited
                 # channel message. Mira decides whether the silence merits a reply.
                 try:
+                    path = self.channel_context_path(channel)
                     payload = self.heartbeat_payload(channel)
                     if not payload:
                         continue
                     send_to_mira(f'$heartbeat #{channel_id}\n{payload}')
+                    # A heartbeat is a real context hand-off, just like an
+                    # addressed $chat prompt. Consume its snapshot so the
+                    # next idle wake-up only contains new conversation.
+                    Files.remove(path)
                 except Exception as error:
                     Logger.exception(error)
                 else:
@@ -278,6 +289,28 @@ class module_mira(GDO_Module):
             return getattr(message, '_env_reply_to', None) or message._env_user
         return message._env_user or getattr(message, '_env_target_user', None)
 
+    @classmethod
+    def is_mirrored_inbound(cls, channel, account, source, payload: str,
+                            now: float | None = None) -> bool:
+        """Reject one near-simultaneous cross-connector mirror.
+
+        Browser/live-chat delivery must not turn an IRC line from a linked
+        account into a second ``{Web}`` line in Mira's context.  Repeats on
+        the *same* connector are intentionally retained.
+        """
+        now = Application.TIME if now is None else now
+        context = cls.INBOUND_CONTEXT
+        context = {
+            key: value for key, value in context.items()
+            if now - value[1] <= INBOUND_MIRROR_WINDOW
+        }
+        cls.INBOUND_CONTEXT = context
+        key = (str(channel.get_id()) if channel else '-', str(account.get_id()), payload.strip())
+        source_id = str(source.get_id())
+        previous = context.get(key)
+        context[key] = (source_id, now)
+        return bool(previous and previous[0] != source_id and now - previous[1] <= INBOUND_MIRROR_WINDOW)
+
     async def on_message(self, message: Message, out_instead_of_in: bool=False):
         if not out_instead_of_in:
             # Events normally arrive before command parsing, while delayed
@@ -307,6 +340,10 @@ class module_mira(GDO_Module):
         payload = self.ibdes_payload(message, out_instead_of_in)
         payload = self.compact_chat_newlines(payload)
         if not payload.strip():
+            return
+        if not out_instead_of_in and self.is_mirrored_inbound(
+                channel, author.get_effective_user(), message._env_server, payload):
+            Logger.debug(f'Ignoring mirrored Mira input from {message._env_server.get_name()}.')
             return
         ibdes += f" {payload}\n"
 
