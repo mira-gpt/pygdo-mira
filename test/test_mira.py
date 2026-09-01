@@ -12,6 +12,7 @@ from gdo.core.connector.Bash import Bash
 from gdo.mira.module_mira import CHAT_CONTEXT_MAX_BYTES, MIRA_ADDRESS, module_mira
 from gdo.mira.method.enabled import enabled
 from gdo.mira.method.heartbeat import heartbeat
+from gdo.mira.method.prompt import prompt
 from gdo.mira.method.shadowlamb import shadowlamb
 from gdo.mira.util import send_to_mira
 from gdo.date.Time import Time
@@ -131,6 +132,10 @@ class module_mira_Test(GDOTestCase):
             self.assertIsNotNone(MIRA_ADDRESS.search(text), text)
         for text in ('mirage', 'Amira', 'miras'):
             self.assertIsNone(MIRA_ADDRESS.search(text), text)
+
+    def test_06a_prompt_uses_account_name_not_display_name(self):
+        user = SimpleNamespace(get_name_sid=lambda: 'pouniok{wc}', render_name=lambda: 'gizmore{wc}')
+        self.assertEqual('pouniok{wc}', prompt.prompt_author(user))
 
     def test_07_context_discards_expired_lines(self):
         mira = module_mira.instance()

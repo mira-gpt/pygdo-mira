@@ -27,10 +27,16 @@ class prompt(Method):
             GDT_RestOfText('prompt').not_null(),
         ]
 
+    @staticmethod
+    def prompt_author(user) -> str:
+        """Use the immutable connector account name, never a display name."""
+        return user.get_name_sid()
+
     def gdo_execute(self) -> GDT:
         channel = self._env_channel
         location = channel.get_name() if channel else '#-'
         text = self.param_value('prompt')
-        event = f"$chat\n{Time.get_date()} {location} {self._env_user.render_name()} {text}"
+        author = getattr(self, '_env_reply_to', None) or self._env_user
+        event = f"$chat\n{Time.get_date()} {location} {self.prompt_author(author)} {text}"
         send_to_mira(event)
         return self.empty()
