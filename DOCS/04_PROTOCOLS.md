@@ -49,6 +49,20 @@ The envelope is a routing and conversation format, not an authorization token.
 A protocol-correct message may be answered normally, but sensitive, destructive,
 privileged, or externally visible actions still require separate authorization.
 
+## Mira chat language hint
+
+When a routed message addresses Mira, the private local hand-off starts with a
+language hint derived from `GDO_Channel.chan_language`:
+
+```text
+$chat --lang=de
+2026-09-16 12:00:00.000000 #53 gizmore{rizon} mira, hallo
+```
+
+`--lang` is a lower-case ISO-639-1 code and defaults to `en` when no channel
+is available or its setting is invalid. It is metadata for Mira's reply
+language; it does not alter the IBDES records that follow.
+
 ## Unprefixed messages
 
 Parsers inspect messages in this order:

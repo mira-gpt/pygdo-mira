@@ -91,6 +91,15 @@ class module_mira_Test(GDOTestCase):
         self.assertEqual(f'#{channel.get_id()}', module_mira.ibdes_channel(channel))
         self.assertEqual('#-', module_mira.ibdes_channel(None))
 
+    def test_05ba_chat_forwards_the_channel_language(self):
+        channel = Bash.get_server().get_or_create_channel('mira_language_test')
+        channel.save_val('chan_language', 'de')
+        self.assertEqual('de', module_mira.chat_language(channel))
+        self.assertEqual('en', module_mira.chat_language(None))
+        self.assertEqual('en', module_mira.chat_language(SimpleNamespace(get_lang_iso=lambda: 'invalid')))
+        self.assertEqual('$chat --lang=de\nhello', module_mira.chat_event(channel, 'hello'))
+        self.assertEqual(f'$heartbeat #{channel.get_id()} --lang=de\nhello', module_mira.heartbeat_event(channel, 'hello'))
+
     def test_05c_ibdes_keeps_the_incoming_reply_connector(self):
         effective = SimpleNamespace(name='gizmore-web')
         reply_to = SimpleNamespace(name='gizmore-ws')

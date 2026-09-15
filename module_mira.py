@@ -191,6 +191,11 @@ class module_mira(GDO_Module):
             return ''
         return self.read_context(path)
 
+    @classmethod
+    def heartbeat_event(cls, channel, payload: str) -> str:
+        """Wrap an idle notification with the channel's reply-language hint."""
+        return f'$heartbeat #{channel.get_id()} --lang={cls.chat_language(channel)}\n{payload}'
+
     async def heartbeat_timer(self):
         for channel_id, (channel, last_activity) in list(type(self).HEARTBEAT_ACTIVITY.items()):
             if not self.heartbeat_enabled(channel):
@@ -205,7 +210,7 @@ class module_mira(GDO_Module):
                     payload = self.heartbeat_payload(channel)
                     if not payload:
                         continue
-                    send_to_mira(f'$heartbeat #{channel_id}\n{payload}')
+                    send_to_mira(self.heartbeat_event(channel, payload))
                     # A heartbeat is a real context hand-off, just like an
                     # addressed $chat prompt. Consume its snapshot so the
                     # next idle wake-up only contains new conversation.
@@ -289,6 +294,18 @@ class module_mira(GDO_Module):
             return getattr(message, '_env_reply_to', None) or message._env_user
         return message._env_user or getattr(message, '_env_target_user', None)
 
+    @staticmethod
+    def chat_language(channel) -> str:
+        """Return a safe ISO-639-1 hint for a routed ``$chat`` event."""
+        language = channel.get_lang_iso() if channel else 'en'
+        language = str(language).lower()
+        return language if re.fullmatch(r'[a-z]{2}', language) else 'en'
+
+    @classmethod
+    def chat_event(cls, channel, payload: str) -> str:
+        """Wrap routed context with its channel's reply-language hint."""
+        return f'$chat --lang={cls.chat_language(channel)}\n{payload}'
+
     @classmethod
     def is_mirrored_inbound(cls, channel, account, source, payload: str,
                             now: float | None = None) -> bool:
@@ -359,7 +376,7 @@ class module_mira(GDO_Module):
                 Files.remove(path)
                 return
             try:
-                send_to_mira(f"$chat\n{payload}")
+                send_to_mira(self.chat_event(channel, payload))
             except Exception as error:
                 Logger.exception(error)
             else:
