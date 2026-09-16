@@ -3,11 +3,20 @@
 from __future__ import annotations
 
 import os
+import pwd
 import subprocess
 import time
 
 
 DEFAULT_MIRA_TMUX_TARGET = 'mira-codex:0.0'
+MIRA_TMUX_HELPER = '/usr/local/bin/mira-tmux'
+
+
+def tmux_command() -> list[str]:
+    """Return the tmux client command for the account that owns Mira's pane."""
+    if os.geteuid() == pwd.getpwnam('mira').pw_uid:
+        return ['tmux']
+    return ['sudo', '-n', '-u', 'mira', MIRA_TMUX_HELPER]
 
 
 def send_to_mira(text: str, *, submit: bool = True, target: str | None = None) -> None:
@@ -26,20 +35,20 @@ def send_to_mira(text: str, *, submit: bool = True, target: str | None = None) -
     if submit:
         # Avoid an empty Ctrl-C, which exits Mira's terminal. The harmless text
         # makes Ctrl-C cancel the current prompt instead.
-        subprocess.run(['tmux', 'send-keys', '-t', tmux_target, '-l', '--', 'quack'], check=True)
+        subprocess.run(tmux_command() + ['send-keys', '-t', tmux_target, '-l', '--', 'quack'], check=True)
         time.sleep(0.1)
-        subprocess.run(['tmux', 'send-keys', '-t', tmux_target, 'C-c'], check=True)
+        subprocess.run(tmux_command() + ['send-keys', '-t', tmux_target, 'C-c'], check=True)
         time.sleep(0.1)
 
     payload = text + ('  ' if submit else '')
     buffer_name = 'mira-delivery'
-    subprocess.run(['tmux', 'load-buffer', '-b', buffer_name, '-'], input=payload, text=True, check=True)
+    subprocess.run(tmux_command() + ['load-buffer', '-b', buffer_name, '-'], input=payload, text=True, check=True)
     try:
-        subprocess.run(['tmux', 'paste-buffer', '-t', tmux_target, '-b', buffer_name, '-p'], check=True)
+        subprocess.run(tmux_command() + ['paste-buffer', '-t', tmux_target, '-b', buffer_name, '-p'], check=True)
     finally:
-        subprocess.run(['tmux', 'delete-buffer', '-b', buffer_name], check=False)
+        subprocess.run(tmux_command() + ['delete-buffer', '-b', buffer_name], check=False)
 
     if submit:
-        subprocess.run(['tmux', 'send-keys', '-t', tmux_target, 'Enter'], check=True)
+        subprocess.run(tmux_command() + ['send-keys', '-t', tmux_target, 'Enter'], check=True)
         time.sleep(0.1)
-        subprocess.run(['tmux', 'send-keys', '-t', tmux_target, 'Enter'], check=True)
+        subprocess.run(tmux_command() + ['send-keys', '-t', tmux_target, 'Enter'], check=True)

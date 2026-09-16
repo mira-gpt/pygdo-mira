@@ -8,6 +8,7 @@ TITLE="MIRA"
 
 RUNNER="/usr/local/bin/start-mira-codex"
 LAUNCHER="/usr/local/bin/launch-mira-codex"
+TMUX_HELPER="/usr/local/bin/mira-tmux"
 SUDOERS="/etc/sudoers.d/mira-codex"
 
 if [[ $EUID -ne 0 ]]; then
@@ -118,8 +119,28 @@ EOF
 chown root:root "$LAUNCHER"
 chmod 755 "$LAUNCHER"
 
+cat >"$TMUX_HELPER" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+
+# This is intentionally the only bridge from the Dog user to Mira's tmux
+# server. Keep it limited to the commands needed by send_to_mira().
+case "${1:-}" in
+    send-keys|load-buffer|paste-buffer|delete-buffer) ;;
+    *)
+        echo "mira-tmux: unsupported command" >&2
+        exit 64
+        ;;
+esac
+
+exec /usr/bin/tmux -S "/tmp/tmux-$(id -u ${MIRA_USER})/default" "\$@"
+EOF
+
+chown root:root "$TMUX_HELPER"
+chmod 755 "$TMUX_HELPER"
+
 cat >"$SUDOERS" <<EOF
-${DISPLAY_USER} ALL=(${MIRA_USER}) NOPASSWD: ${RUNNER}
+${DISPLAY_USER} ALL=(${MIRA_USER}) NOPASSWD: ${RUNNER}, ${TMUX_HELPER} *
 EOF
 
 chown root:root "$SUDOERS"
