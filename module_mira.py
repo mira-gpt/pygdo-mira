@@ -309,6 +309,16 @@ class module_mira(GDO_Module):
         """Wrap routed context with its channel's reply-language hint."""
         return f'$chat --lang={cls.chat_language(channel)}\n{payload}'
 
+    @staticmethod
+    def is_shadowlamb_reply(channel, author, server) -> bool:
+        """Private Lamb3 replies belong exclusively to the Shadowlamb bridge."""
+        if channel is not None:
+            return False
+        from gdo.mira.method.shadowlamb import shadowlamb
+        method = shadowlamb().env_server(server)
+        return (not method.get_config_server_value('disabled') and
+                author.get_name().casefold() == method.cfg_nickname().casefold())
+
     @classmethod
     def is_mirrored_inbound(cls, channel, account, source, payload: str,
                             now: float | None = None) -> bool:
@@ -332,6 +342,10 @@ class module_mira(GDO_Module):
         return bool(previous and previous[0] != source_id and now - previous[1] <= INBOUND_MIRROR_WINDOW)
 
     async def on_message(self, message: Message, out_instead_of_in: bool=False):
+        # LinkUUp HTTP input reaches the Dog through its explicit IPC queue. Its
+        # room channels are Mira conversations by design, so do not require users
+        # to type a second "mira" address or enable every virtual room manually.
+        is_lup = bool(message._env_server and message._env_server.gdo_val('serv_connector') == 'lup')
         if not out_instead_of_in:
             # Events normally arrive before command parsing, while delayed
             # listeners can see the already parsed method.  Cover both so
@@ -341,7 +355,7 @@ class module_mira(GDO_Module):
             if getattr(message, '_method', None) and message._method.gdo_trigger() == 'mira':
                 return
         channel = message._env_channel if message._env_channel else None
-        if channel and not self.is_channel_enabled(channel):
+        if channel and not is_lup and not self.is_channel_enabled(channel):
             return
         context_user = getattr(message, '_env_target_user', message._env_user) if out_instead_of_in else self.ibdes_author(message, False)
         author = self.ibdes_author(message, out_instead_of_in) or context_user
@@ -373,7 +387,13 @@ class module_mira(GDO_Module):
         Files.create_dir(Strings.rsubstr_to(path, '/'), 0o0770)
         Files.append_content(path, ibdes)
 
-        if MIRA_ADDRESS.search(payload) and out_instead_of_in == False:
+        # Lamb3 private replies are consumed by shadowlamb.poll_servers().
+        # Their game text regularly contains "mira", which must not make the
+        # ordinary address/heartbeat path forward the same private log too.
+        if self.is_shadowlamb_reply(channel, author, message._env_server):
+            return
+
+        if (is_lup or MIRA_ADDRESS.search(payload)) and out_instead_of_in == False:
             payload = self.read_context(path)
             if not payload:
                 Files.remove(path)

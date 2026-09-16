@@ -201,6 +201,18 @@ class module_mira_Test(GDOTestCase):
             '2026-08-09 00:59:15.288864 #- Lamb3{wechall} pong!\n',
             shadowlamb.reply_lines(payload, 'Lamb3'))
 
+    def test_09a_shadowlamb_forwards_the_server_language(self):
+        server = SimpleNamespace(get_lang_iso=lambda: 'en')
+        self.assertEqual('$chat --lang=en\nreply\n', shadowlamb.chat_event(server, 'reply\n'))
+
+    def test_09b_shadowlamb_private_replies_skip_normal_chat_forwarding(self):
+        author = SimpleNamespace(get_name=lambda: 'Lamb3')
+        server = SimpleNamespace()
+        method = SimpleNamespace(get_config_server_value=lambda _key: False, cfg_nickname=lambda: 'Lamb3')
+        with patch('gdo.mira.method.shadowlamb.shadowlamb.env_server', return_value=method):
+            self.assertTrue(module_mira.is_shadowlamb_reply(None, author, server))
+        self.assertFalse(module_mira.is_shadowlamb_reply(SimpleNamespace(), author, server))
+
     def test_10_health_reports_transitions_but_not_its_initial_baseline(self):
         mira = module_mira.instance()
         self.assertEqual([], mira.health_changes({'Telegram': True, 'WeChall': True}))

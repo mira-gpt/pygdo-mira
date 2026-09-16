@@ -92,6 +92,10 @@ class shadowlamb(Method):
             return 0, ''
         return size, cls.reply_lines(payload, nickname)
 
+    @staticmethod
+    def chat_event(server: GDO_Server, replies: str) -> str:
+        return f'$chat --lang={server.get_lang_iso()}\n{replies}'
+
     @classmethod
     async def poll_servers(cls):
         """Check one configured Lamb3 private log per explicitly enabled server."""
@@ -110,7 +114,7 @@ class shadowlamb(Method):
             offset, replies = cls.read_new_replies(path, offset, method.cfg_nickname())
             cls.OFFSETS[key] = offset
             if replies:
-                send_to_mira(f'$chat\n{replies}')
+                send_to_mira(cls.chat_event(server, replies))
 
     async def gdo_execute(self) -> GDT:
         if not (server := GDO_Server.table().get_by_vals({'serv_name': self.cfg_server()})):
