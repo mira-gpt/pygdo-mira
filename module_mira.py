@@ -56,6 +56,9 @@ class module_mira(GDO_Module):
             'chat',
         ]
 
+    def gdo_main_method_name(self) -> str:
+        return 'hey_there'
+
     async def gdo_install(self):
         pass
 

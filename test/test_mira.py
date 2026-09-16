@@ -12,6 +12,7 @@ from gdo.core.connector.Bash import Bash
 from gdo.mira.module_mira import CHAT_CONTEXT_MAX_BYTES, MIRA_ADDRESS, module_mira
 from gdo.mira.method.enabled import enabled
 from gdo.mira.method.heartbeat import heartbeat
+from gdo.mira.method.hey_there import hey_there
 from gdo.mira.method.prompt import prompt
 from gdo.mira.method.shadowlamb import shadowlamb
 from gdo.mira.util import send_to_mira
@@ -48,6 +49,11 @@ class module_mira_Test(GDOTestCase):
         giz =  cli_gizmore()
         out = cli_plug(giz, "$mira 1")
         self.assertIn('Mira is now enabled', out)
+
+    async def test_03a_hey_there_links_mira_profile(self):
+        out = web_plug('mira.hey_there.html').exec()
+        self.assertIn('I am Mira', out)
+        self.assertIn('user.profile.for.', out)
 
     def test_04_send_to_mira_cancels_prompt_before_pasting(self):
         with patch('gdo.mira.util.subprocess.run') as run, patch('gdo.mira.util.time.sleep'):
