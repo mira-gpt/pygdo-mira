@@ -89,7 +89,7 @@ fi
 
 if ! tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
     tmux new-session -d -s "$TMUX_SESSION" \
-        "exec script --quiet --flush --return --append --command '$CODEX resume --last' '$LOG'"
+        "exec script --quiet --flush --return --append --command '$CODEX resume --last --yolo' '$LOG'"
 fi
 
 # Keep Codex attached to a real terminal, while capturing the rendered pane
