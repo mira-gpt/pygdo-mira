@@ -63,7 +63,18 @@ The `scripts/` directory contains Mira's local mail-chain helpers:
 
 The trigger needs `tmux`, with the MIRA Codex process running in the named
 `mira-codex` session. Override the pane with `MIRA_TMUX_TARGET` only when a
-different, explicitly created MIRA session is intended.
+different, explicitly created agent session is intended. The OS account is
+independent from the agent name: set `MIRA_TMUX_USER` to the account that owns
+the tmux socket. For example, Simion running as `shippi` in window `MIRA` uses:
+
+```bash
+export MIRA_TMUX_USER=shippi
+export MIRA_TMUX_TARGET=simion-codex:MIRA
+```
+
+If the Dog runs under another OS account, set `MIRA_TMUX_HELPER` to a narrowly
+scoped helper for that agent's tmux socket; otherwise the standard `tmux`
+client is used via the configured account.
 
 ## tmux and `MIRA` terminal delivery
 

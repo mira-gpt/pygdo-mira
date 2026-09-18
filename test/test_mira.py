@@ -15,7 +15,7 @@ from gdo.mira.method.heartbeat import heartbeat
 from gdo.mira.method.hey_there import hey_there
 from gdo.mira.method.prompt import prompt
 from gdo.mira.method.shadowlamb import shadowlamb
-from gdo.mira.util import send_to_mira
+from gdo.mira.util import send_to_mira, tmux_command
 from gdo.date.Time import Time
 from gdotest.TestUtil import cli_plug, reinstall_module, cli_gizmore, GDOTestCase, WebPlug, install_module, web_plug
 
@@ -62,6 +62,12 @@ class module_mira_Test(GDOTestCase):
         self.assertEqual(['tmux', 'send-keys', '-t', 'test:0.0', '-l', '--', 'quack'], calls[0])
         self.assertEqual(['tmux', 'send-keys', '-t', 'test:0.0', 'C-c'], calls[1])
         self.assertEqual(['tmux', 'load-buffer', '-b', 'mira-delivery', '-'], calls[2])
+
+    def test_04a_tmux_delivery_can_target_a_non_mira_os_user(self):
+        with patch.dict(os.environ, {'MIRA_TMUX_USER': 'shippi', 'MIRA_TMUX_HELPER': ''}, clear=False), \
+             patch('gdo.mira.util.os.geteuid', return_value=1001), \
+             patch('gdo.mira.util.pwd.getpwnam', return_value=SimpleNamespace(pw_uid=1002)):
+            self.assertEqual(['sudo', '-n', '-u', 'shippi', 'tmux'], tmux_command())
 
     def test_05_channel_forwarding_requires_opt_in(self):
         channel = Bash.get_server().get_or_create_channel('mira_opt_in_test')
