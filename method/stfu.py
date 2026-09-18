@@ -8,6 +8,9 @@ from gdo.base.Util import Files
 class stfu(Method):
     """Forget the buffered Mira context for this private or channel conversation."""
 
+    def gdo_method_hidden(self) -> bool:
+        return True
+
     @classmethod
     def gdo_trigger(cls) -> str:
         return 'stfu'

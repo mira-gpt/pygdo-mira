@@ -19,6 +19,9 @@ class shadowlamb(Method):
 
     OFFSETS: dict[str, int] = {}
 
+    def gdo_method_hidden(self) -> bool:
+        return True
+
     @classmethod
     def gdo_default_enabled_server(cls) -> bool:
         """Never monitor a server until its administrator explicitly opts in."""

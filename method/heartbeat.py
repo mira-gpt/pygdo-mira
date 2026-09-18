@@ -23,6 +23,9 @@ class heartbeat(Method):
     def gdo_in_private(self) -> bool:
         return False
 
+    def gdo_method_hidden(self) -> bool:
+        return True
+
     def _disabled_in_channel(self, channel) -> bool:
         # This configuration command itself remains available while its
         # heartbeat is disabled.
