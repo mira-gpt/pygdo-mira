@@ -13,6 +13,7 @@ from gdo.base.Render import Mode
 from gdo.base.Util import Files, Strings
 from gdo.core.GDO_User import GDO_User
 from gdo.core.GDT_Bool import GDT_Bool
+from gdo.core.GDT_String import GDT_String
 from gdo.core.connector.Bash import Bash
 from gdo.date.GDT_Duration import GDT_Duration
 from gdo.date.Time import Time
@@ -24,8 +25,9 @@ if TYPE_CHECKING:
     from gdo.ui.GDT_Page import GDT_Page
 
 
-# Address Mira as a standalone name anywhere in a chat line.  Lookarounds
-# also cover line boundaries, unlike ``[^a-z]mira[^a-z]``.
+# Default address for backwards compatibility. Runtime matching uses the
+# configurable agent name below, so a second installation can answer to e.g.
+# ``simion`` without also reacting to ``mira``.
 MIRA_ADDRESS = re.compile(r'(?<![a-z])mira(?![a-z])', re.IGNORECASE)
 CHAT_CONTEXT_MAX_BYTES = 7_770
 SHADOWLAMB_POLL_DELAY = 0.25
@@ -64,9 +66,21 @@ class module_mira(GDO_Module):
 
     def gdo_module_config(self) -> list[GDT]:
         return [
+            GDT_String('agent_name').ascii().minlen(1).maxlen(32).not_null().initial('mira'),
             GDT_Duration('heartbeat_delay').not_null().units(4, True).initial_value(1337.420320),
             GDT_Duration('context_max_age').not_null().min(Time.ONE_MINUTE).max(Time.ONE_DAY).initial('15m'),
         ]
+
+    def cfg_agent_name(self) -> str:
+        return self.get_config_value('agent_name')
+
+    @staticmethod
+    def address_pattern(agent_name: str) -> re.Pattern:
+        """Match an agent name as a standalone word in natural chat text."""
+        return re.compile(rf'(?<![a-z]){re.escape(agent_name)}(?![a-z])', re.IGNORECASE)
+
+    def is_addressed(self, payload: str) -> bool:
+        return bool(self.address_pattern(self.cfg_agent_name()).search(payload))
 
     def cfg_heartbeat_delay(self) -> float:
         return self.get_config_value('heartbeat_delay')
@@ -393,7 +407,7 @@ class module_mira(GDO_Module):
         if self.is_shadowlamb_reply(channel, author, message._env_server):
             return
 
-        if (is_lup or MIRA_ADDRESS.search(payload)) and out_instead_of_in == False:
+        if (is_lup or self.is_addressed(payload)) and out_instead_of_in == False:
             payload = self.read_context(path)
             if not payload:
                 Files.remove(path)

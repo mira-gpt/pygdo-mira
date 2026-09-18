@@ -148,6 +148,13 @@ class module_mira_Test(GDOTestCase):
         for text in ('mirage', 'Amira', 'miras'):
             self.assertIsNone(MIRA_ADDRESS.search(text), text)
 
+    def test_06aa_agent_address_is_configurable(self):
+        address = module_mira.address_pattern('simion')
+        for text in ('simion', 'Simion:', 'hello, simion!', 'tell simion this'):
+            self.assertIsNotNone(address.search(text), text)
+        for text in ('mira', 'simionary', 'Asimion', 'simions'):
+            self.assertIsNone(address.search(text), text)
+
     def test_06a_prompt_uses_account_name_not_display_name(self):
         user = SimpleNamespace(get_name_sid=lambda: 'pouniok{wc}', render_name=lambda: 'gizmore{wc}')
         self.assertEqual('pouniok{wc}', prompt.prompt_author(user))
