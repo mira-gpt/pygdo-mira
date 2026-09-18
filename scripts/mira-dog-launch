@@ -4,6 +4,9 @@ set -euo pipefail
 
 project_dir=/home/gizmore/www/pygdo
 log_file=/home/mira/dog-live.log
+# Keep the production Dog on the stable interpreter. A free-threaded runtime
+# can still be selected explicitly for isolated diagnostics via PYGDO_PYTHON.
+python_bin=${PYGDO_PYTHON:-python3}
 
 mkdir -p -- "$(dirname -- "$log_file")"
-exec "$project_dir/bin/mira" '.launch' "$@" >>"$log_file" 2>&1
+exec env PYGDO_USER=mira "$python_bin" "$project_dir/bin/pygdo.py" '.launch' "$@" >>"$log_file" 2>&1
