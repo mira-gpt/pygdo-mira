@@ -333,6 +333,23 @@ class module_mira(GDO_Module):
         return (not method.get_config_server_value('disabled') and
                 author.get_name().casefold() == method.cfg_nickname().casefold())
 
+    @staticmethod
+    def is_private_agent_notice(message: Message, channel, author,
+                                out_instead_of_in: bool) -> bool:
+        """NOTICE is an explicit, immediate private wake-up for an agent.
+
+        IRC does not echo our own NOTICEs, but rejecting a Dog identity here
+        also protects against connector bridges which do.  Channel NOTICEs
+        retain their normal address/heartbeat behaviour.
+        """
+        return bool(
+            not out_instead_of_in and
+            channel is None and
+            getattr(message, '_mira_notice', False) and
+            author is not None and
+            not author.is_dog()
+        )
+
     @classmethod
     def is_mirrored_inbound(cls, channel, account, source, payload: str,
                             now: float | None = None) -> bool:
@@ -376,6 +393,8 @@ class module_mira(GDO_Module):
         if author is None:
             Logger.error('Ignoring Mira message without source or target user.')
             return
+        immediate_notice = self.is_private_agent_notice(
+            message, channel, author, out_instead_of_in)
         # Public channels remain open; private chats require the user's
         # explicit per-user permission (enabled by default for now).
         if channel is None and not out_instead_of_in and not self.is_user_enabled(author):
@@ -407,7 +426,7 @@ class module_mira(GDO_Module):
         if self.is_shadowlamb_reply(channel, author, message._env_server):
             return
 
-        if (is_lup or self.is_addressed(payload)) and out_instead_of_in == False:
+        if (is_lup or immediate_notice or self.is_addressed(payload)) and out_instead_of_in == False:
             payload = self.read_context(path)
             if not payload:
                 Files.remove(path)

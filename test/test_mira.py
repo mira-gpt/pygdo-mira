@@ -161,6 +161,17 @@ class module_mira_Test(GDOTestCase):
         for text in ('mira', 'simionary', 'Asimion', 'simions'):
             self.assertIsNone(address.search(text), text)
 
+    def test_06ab_private_notice_is_an_immediate_agent_wakeup(self):
+        notice = SimpleNamespace(_mira_notice=True)
+        author = SimpleNamespace(is_dog=lambda: False)
+        self.assertTrue(module_mira.is_private_agent_notice(notice, None, author, False))
+        self.assertFalse(module_mira.is_private_agent_notice(notice, SimpleNamespace(), author, False))
+        self.assertFalse(module_mira.is_private_agent_notice(notice, None, author, True))
+        self.assertFalse(module_mira.is_private_agent_notice(
+            SimpleNamespace(_mira_notice=False), None, author, False))
+        self.assertFalse(module_mira.is_private_agent_notice(
+            notice, None, SimpleNamespace(is_dog=lambda: True), False))
+
     def test_06a_prompt_uses_account_name_not_display_name(self):
         user = SimpleNamespace(get_name_sid=lambda: 'pouniok{wc}', render_name=lambda: 'gizmore{wc}')
         self.assertEqual('pouniok{wc}', prompt.prompt_author(user))
