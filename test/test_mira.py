@@ -162,9 +162,13 @@ class module_mira_Test(GDOTestCase):
             self.assertIsNone(address.search(text), text)
 
     def test_06ab_private_notice_is_an_immediate_agent_wakeup(self):
-        notice = SimpleNamespace(_mira_notice=True)
+        ready_server = SimpleNamespace(connection_completed=True)
+        notice = SimpleNamespace(_mira_notice=True, _env_server=ready_server)
         author = SimpleNamespace(is_dog=lambda: False)
         self.assertTrue(module_mira.is_private_agent_notice(notice, None, author, False))
+        self.assertFalse(module_mira.is_private_agent_notice(
+            SimpleNamespace(_mira_notice=True, _env_server=SimpleNamespace(connection_completed=False)),
+            None, author, False))
         self.assertFalse(module_mira.is_private_agent_notice(notice, SimpleNamespace(), author, False))
         self.assertFalse(module_mira.is_private_agent_notice(notice, None, author, True))
         self.assertFalse(module_mira.is_private_agent_notice(

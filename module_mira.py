@@ -346,6 +346,7 @@ class module_mira(GDO_Module):
             not out_instead_of_in and
             channel is None and
             getattr(message, '_mira_notice', False) and
+            getattr(getattr(message, '_env_server', None), 'connection_completed', False) and
             author is not None and
             not author.is_dog()
         )
