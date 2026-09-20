@@ -163,6 +163,11 @@ class module_mira(GDO_Module):
         await self.on_message(message, False)
 
     async def on_sent_message(self, message: Message):
+        # Outgoing chat commands are normally attributed to Dog by the
+        # connector. Only an explicit marker can reliably identify a Mira
+        # reply without also hiding unrelated Dog or admin output.
+        if getattr(message, '_mira_reply', False):
+            return
         await self.on_message(message, True)
 
     def is_channel_enabled(self, channel) -> bool:

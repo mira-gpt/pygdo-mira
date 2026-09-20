@@ -219,6 +219,13 @@ class module_mira_Test(GDOTestCase):
         self.assertEqual('hello', module_mira.ibdes_payload(message, True))
         self.assertEqual('$say.in 5 --prefix=0 hello', module_mira.ibdes_payload(message, False))
 
+    async def test_08d_marked_mira_reply_is_not_written_to_ibdes(self):
+        mira = module_mira.instance()
+        message = SimpleNamespace(_mira_reply=True)
+        with patch.object(mira, 'on_message') as on_message:
+            await mira.on_sent_message(message)
+        on_message.assert_not_awaited()
+
     def test_09_shadowlamb_filters_only_new_lamb3_replies(self):
         payload = (
             '2026-08-09 00:59:15.203041 #- Dog{wechall} .ping\n'
