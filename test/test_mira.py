@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from gdo.base.Application import Application
+from gdo.base.Render import Mode
 from gdo.base.ModuleLoader import ModuleLoader
 from gdo.base.Util import Files
 from gdo.core.connector.Bash import Bash
@@ -54,6 +55,12 @@ class module_mira_Test(GDOTestCase):
         out = web_plug('mira.hey_there.html').exec()
         self.assertIn('I am Mira', out)
         self.assertIn('user.profile.for.', out)
+
+        card = await hey_there().gdo_execute()
+        chat_output = card.render(Mode.render_irc)
+        self.assertIn('I am Mira', chat_output)
+        self.assertIn('profile:', chat_output)
+        self.assertNotIn('None', chat_output)
 
     def test_04_send_to_mira_cancels_prompt_before_pasting(self):
         with patch('gdo.mira.util.subprocess.run') as run, patch('gdo.mira.util.time.sleep'):
