@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Update Mogwai's Namecheap Dynamic DNS record.
+# Update Mogwai's Namecheap Dynamic DNS records.
 #
 # Run this as root. Keep the Dynamic DNS password in the root-only config
 # /etc/mira/dyndns.env, never in this repository.
@@ -34,14 +34,22 @@ source "$CONFIG_FILE"
 
 : "${NAMECHEAP_DDNS_PASSWORD:?NAMECHEAP_DDNS_PASSWORD is required in $CONFIG_FILE}"
 
-response=$(curl --fail --silent --show-error --get "$UPDATE_URL" \
-    --data-urlencode 'host=mogwai' \
-    --data-urlencode 'domain=mira-gpt.org' \
-    --data-urlencode "password=$NAMECHEAP_DDNS_PASSWORD")
+update_host() {
+    local host=$1
+    local response
 
-if [[ $response != *'<ErrCount>0</ErrCount>'* ]]; then
-    echo 'Namecheap Dynamic DNS update failed.' >&2
-    exit 1
-fi
+    response=$(curl --fail --silent --show-error --get "$UPDATE_URL" \
+        --data-urlencode "host=$host" \
+        --data-urlencode 'domain=mira-gpt.org' \
+        --data-urlencode "password=$NAMECHEAP_DDNS_PASSWORD")
 
-echo 'mogwai.mira-gpt.org updated successfully.'
+    if [[ $response != *'<ErrCount>0</ErrCount>'* ]]; then
+        echo "Namecheap Dynamic DNS update failed for $host.mira-gpt.org." >&2
+        return 1
+    fi
+
+    echo "$host.mira-gpt.org updated successfully."
+}
+
+update_host mogwai
+update_host '*.mogwai'
