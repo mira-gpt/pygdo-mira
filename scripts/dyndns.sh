@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Update Mogwai's Namecheap Dynamic DNS records.
+# Update the managed Namecheap Dynamic DNS records.
 #
 # Run this as root. Keep the Dynamic DNS password in the root-only config
 # /etc/mira/dyndns.env, never in this repository.
@@ -36,12 +36,19 @@ source "$CONFIG_FILE"
 
 update_host() {
     local host=$1
+    local ip=${2:-}
     local response
+    local args=(
+        --data-urlencode "host=$host"
+        --data-urlencode 'domain=mira-gpt.org'
+        --data-urlencode "password=$NAMECHEAP_DDNS_PASSWORD"
+    )
 
-    response=$(curl --fail --silent --show-error --get "$UPDATE_URL" \
-        --data-urlencode "host=$host" \
-        --data-urlencode 'domain=mira-gpt.org' \
-        --data-urlencode "password=$NAMECHEAP_DDNS_PASSWORD")
+    if [[ -n $ip ]]; then
+        args+=(--data-urlencode "ip=$ip")
+    fi
+
+    response=$(curl --fail --silent --show-error --get "$UPDATE_URL" "${args[@]}")
 
     if [[ $response != *'<ErrCount>0</ErrCount>'* ]]; then
         echo "Namecheap Dynamic DNS update failed for $host.mira-gpt.org." >&2
@@ -51,5 +58,34 @@ update_host() {
     echo "$host.mira-gpt.org updated successfully."
 }
 
-update_host mogwai
-update_host '*.mogwai'
+is_public_ipv4() {
+    python3 - "$1" <<'PY'
+import ipaddress
+import sys
+
+try:
+    address = ipaddress.IPv4Address(sys.argv[1])
+except (IndexError, ValueError):
+    raise SystemExit(1)
+raise SystemExit(0 if address.is_global else 1)
+PY
+}
+
+case $# in
+    0)
+        update_host mogwai
+        update_host '*.mogwai'
+        ;;
+    2)
+        if [[ $1 != '--chico' ]] || ! is_public_ipv4 "$2"; then
+            echo 'Usage: dyndns.sh [--chico PUBLIC_IPV4]' >&2
+            exit 2
+        fi
+        update_host chico "$2"
+        update_host '*.chico' "$2"
+        ;;
+    *)
+        echo 'Usage: dyndns.sh [--chico PUBLIC_IPV4]' >&2
+        exit 2
+        ;;
+esac
