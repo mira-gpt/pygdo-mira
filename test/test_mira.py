@@ -116,7 +116,7 @@ class module_mira_Test(GDOTestCase):
         self.assertEqual('de', module_mira.chat_language(channel))
         self.assertEqual('en', module_mira.chat_language(None))
         self.assertEqual('en', module_mira.chat_language(SimpleNamespace(get_lang_iso=lambda: 'invalid')))
-        self.assertEqual('$chat --lang=de\nhello', module_mira.chat_event(channel, 'hello'))
+        self.assertEqual('$chat --lang=de\nhello\n$chat_done', module_mira.chat_event(channel, 'hello'))
         self.assertEqual(f'$heartbeat #{channel.get_id()} --lang=de\nhello', module_mira.heartbeat_event(channel, 'hello'))
 
     def test_05c_ibdes_keeps_the_incoming_reply_connector(self):
@@ -245,7 +245,7 @@ class module_mira_Test(GDOTestCase):
 
     def test_09a_shadowlamb_forwards_the_server_language(self):
         server = SimpleNamespace(get_lang_iso=lambda: 'en')
-        self.assertEqual('$chat --lang=en\nreply\n', shadowlamb.chat_event(server, 'reply\n'))
+        self.assertEqual('$chat --lang=en\nreply\n$chat_done', shadowlamb.chat_event(server, 'reply\n'))
 
     def test_09b_shadowlamb_private_replies_skip_normal_chat_forwarding(self):
         author = SimpleNamespace(get_name=lambda: 'Lamb3')

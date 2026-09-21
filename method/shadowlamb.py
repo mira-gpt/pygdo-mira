@@ -97,7 +97,8 @@ class shadowlamb(Method):
 
     @staticmethod
     def chat_event(server: GDO_Server, replies: str) -> str:
-        return f'$chat --lang={server.get_lang_iso()}\n{replies}'
+        replies = replies.rstrip('\r\n')
+        return f'$chat --lang={server.get_lang_iso()}\n{replies}\n$chat_done'
 
     @classmethod
     async def poll_servers(cls):

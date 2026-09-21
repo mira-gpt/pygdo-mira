@@ -46,7 +46,7 @@ def process(path: Path) -> None:
     path.unlink(missing_ok=True)
     if any(MIRA_ADDRESS.match(line) for line in payload_lines(ibdes)):
         # Keep the full local context so $chat has the normal IBDES envelope.
-        send_to_mira(f"$chat\n{ibdes}")
+        send_to_mira(f"$chat\n{ibdes.rstrip('\\r\\n')}\n$chat_done")
         print("Delivered explicit micro1 call.", flush=True)
     else:
         print("Transcript kept local; no 'mira' wake word.", flush=True)

@@ -37,6 +37,6 @@ class prompt(Method):
         location = channel.get_name() if channel else '#-'
         text = self.param_value('prompt')
         author = getattr(self, '_env_reply_to', None) or self._env_user
-        event = f"$chat\n{Time.get_date()} {location} {self.prompt_author(author)} {text}"
+        event = f"$chat\n{Time.get_date()} {location} {self.prompt_author(author)} {text}\n$chat_done"
         send_to_mira(event)
         return self.empty()

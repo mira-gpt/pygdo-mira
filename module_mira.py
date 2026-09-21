@@ -325,8 +325,9 @@ class module_mira(GDO_Module):
 
     @classmethod
     def chat_event(cls, channel, payload: str) -> str:
-        """Wrap routed context with its channel's reply-language hint."""
-        return f'$chat --lang={cls.chat_language(channel)}\n{payload}'
+        """Wrap routed context with an explicit, complete chat envelope."""
+        return (f'$chat --lang={cls.chat_language(channel)}\n' +
+                payload.rstrip('\r\n') + '\n$chat_done')
 
     @staticmethod
     def is_shadowlamb_reply(channel, author, server) -> bool:
