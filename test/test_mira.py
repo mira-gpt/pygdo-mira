@@ -209,11 +209,15 @@ class module_mira_Test(GDOTestCase):
                 file.write(f'{recent} #- gizmore{{bash}} old {filler}\n{line}')
             self.assertEqual(line, mira.read_context(path))
 
-    def test_08b_compacts_repeated_chat_newlines(self):
+    def test_08b_compacts_chat_newlines_into_one_ibdes_record(self):
         compact = module_mira.compact_chat_newlines
-        self.assertEqual('one\ntwo', compact('one\n\ntwo'))
-        self.assertEqual('one\ntwo', compact('one\r\n\r\ntwo'))
-        self.assertEqual('one\ntwo', compact('one\r\r\ntwo'))
+        self.assertEqual('one two', compact('one\n\ntwo'))
+        self.assertEqual('one two', compact('one\r\n\r\ntwo'))
+        self.assertEqual('one two', compact('one\r\r\ntwo'))
+        self.assertEqual(
+            'Caption [Telegram image received: file:///tmp/image.jpg]',
+            compact('Caption\n[Telegram image received: file:///tmp/image.jpg]'),
+        )
 
     def test_08bb_does_not_forward_the_mira_channel_toggle(self):
         self.assertTrue(module_mira.is_toggle_command('$mira 1', '$'))

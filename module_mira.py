@@ -272,8 +272,13 @@ class module_mira(GDO_Module):
 
     @staticmethod
     def compact_chat_newlines(payload: str) -> str:
-        """Keep accidental blank chat lines from splitting one IBDES record."""
-        return re.sub(r'(?:\r\n|\r|\n){2,}', '\n', payload)
+        """Keep one chat payload in exactly one IBDES record.
+
+        IBDES is line-oriented.  Attachments with a Telegram caption used a
+        single newline between the caption and their local file notice, which
+        made the notice look like a separate, malformed record downstream.
+        """
+        return re.sub(r'\s*(?:\r\n|\r|\n)\s*', ' ', payload).strip()
 
     @staticmethod
     def is_toggle_command(payload: str, trigger: str) -> bool:
