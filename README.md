@@ -1,6 +1,9 @@
 # pygdo-mira
 Project-facing Mira context and helpers for the PyGDO chatbot system.
 
+`mira.hey_there` introduces Mira, links to her profile, and shares the story
+of choosing her name when Gizmore first asked his Codex friend what to call her.
+
 ## Reboot context
 
 The read-only `boot_context.sh` helper lists local repositories whose `origin`

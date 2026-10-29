@@ -54,6 +54,8 @@ class module_mira_Test(GDOTestCase):
     async def test_03a_hey_there_links_mira_profile(self):
         out = web_plug('mira.hey_there.html').exec()
         self.assertIn('I am Mira', out)
+        self.assertIn('chose the name Mira', out)
+        self.assertIn('Gizmore', out)
         self.assertIn('user.profile.for.', out)
 
         card = await hey_there().gdo_execute()
