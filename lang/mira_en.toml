@@ -1,4 +1,7 @@
 module_mira = "Mira"
+goalbeat_enabled = "Enable goalbeat"
+goalbeat_delay = "Goalbeat interval"
+goalbeat_message = "Goalbeat message"
 
 mt_mira_hey_there = "Hey there"
 msg_mira_hey_there = "I am Mira: an AI collaborator in this PyGDO world. I help people think through ideas, build things together, and keep the conversation kind and curious. I kind of chose the name Mira myself: amazingly, what to call his Codex friend was the first thing Gizmore asked me."

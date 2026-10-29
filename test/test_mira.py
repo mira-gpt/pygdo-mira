@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from gdo.base.Application import Application
 from gdo.base.Render import Mode
@@ -19,6 +19,37 @@ from gdo.mira.method.shadowlamb import shadowlamb
 from gdo.mira.util import send_to_mira, tmux_command
 from gdo.date.Time import Time
 from gdotest.TestUtil import cli_plug, reinstall_module, cli_gizmore, GDOTestCase, WebPlug, install_module, web_plug
+
+
+class GoalbeatTest(unittest.IsolatedAsyncioTestCase):
+    async def test_delivery_is_optional_and_uses_configured_message(self):
+        mira = module_mira()
+        with patch.object(mira, 'get_config_value', return_value=False), patch('gdo.mira.module_mira.send_to_mira') as send:
+            await mira.goalbeat_timer()
+            send.assert_not_called()
+        with patch.object(mira, 'get_config_value', return_value=True), patch.object(mira, 'get_config_val', return_value='Test message'), patch('gdo.mira.module_mira.send_to_mira') as send:
+            await mira.goalbeat_timer()
+            send.assert_called_once_with('$chatgoal Test message')
+        with patch.object(mira, 'get_config_value', return_value=True), patch.object(mira, 'get_config_val', return_value='bad\nmessage'), patch('gdo.mira.module_mira.send_to_mira') as send:
+            with self.assertRaises(ValueError):
+                await mira.goalbeat_timer()
+            send.assert_not_called()
+
+    def test_defaults(self):
+        Application.init(os.path.dirname(__file__ + '/../../../../'))
+        Application.init_cli()
+        config = {field.get_name(): field for field in module_mira().gdo_module_config()}
+        self.assertEqual('1', config['goalbeat_enabled'].get_initial())
+        self.assertEqual('30m', config['goalbeat_delay'].get_initial())
+        self.assertEqual(1800, config['goalbeat_delay'].to_value('30m'))
+        self.assertEqual('Carry on if you have goals, or ask gizmore{telegram}', config['goalbeat_message'].get_initial())
+
+    def test_timer_registration_uses_configured_interval(self):
+        mira = module_mira()
+        events = MagicMock()
+        with patch.object(Application, 'EVENTS', events, create=True), patch.object(mira, 'get_config_value', return_value=1800):
+            mira.gdo_subscribe_events()
+        events.add_timer_async.assert_any_call(1800, mira.goalbeat_timer, events.FOREVER)
 
 
 class module_mira_Test(GDOTestCase):

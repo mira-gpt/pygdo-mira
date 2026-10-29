@@ -68,6 +68,9 @@ class module_mira(GDO_Module):
         return [
             GDT_String('agent_name').ascii().minlen(1).maxlen(32).not_null().initial('mira'),
             GDT_Duration('heartbeat_delay').not_null().units(4, True).initial_value(1337.420320),
+            GDT_Bool('goalbeat_enabled').not_null().initial('1'),
+            GDT_Duration('goalbeat_delay').not_null().min(Time.ONE_MINUTE).initial('30m'),
+            GDT_String('goalbeat_message').minlen(1).maxlen(192).pattern(r'\A[^\r\n\x00]+\Z').not_null().initial('Carry on if you have goals, or ask gizmore{telegram}'),
             GDT_Duration('context_max_age').not_null().min(Time.ONE_MINUTE).max(Time.ONE_DAY).initial('15m'),
         ]
 
@@ -121,6 +124,7 @@ class module_mira(GDO_Module):
     def gdo_subscribe_events(self):
         # Application.EVENTS.add_timer_async(self.cfg_heartbeat_delay(), self.mira_is_alive, 69_696_969)
         Application.EVENTS.add_timer_async(HEALTH_DELAY, self.health_timer, Application.EVENTS.FOREVER)
+        Application.EVENTS.add_timer_async(self.get_config_value('goalbeat_delay'), self.goalbeat_timer, Application.EVENTS.FOREVER)
         Application.EVENTS.add_timer_async(HEARTBEAT_CHECK_DELAY, self.heartbeat_timer, Application.EVENTS.FOREVER)
         Application.EVENTS.add_timer_async(SHADOWLAMB_POLL_DELAY, self.shadowlamb_timer, Application.EVENTS.FOREVER)
         Application.EVENTS.subscribe_times('new_message', self.on_new_message, 2_238_239_328)
@@ -138,6 +142,13 @@ class module_mira(GDO_Module):
     async def shadowlamb_timer(self):
         from gdo.mira.method.shadowlamb import shadowlamb
         await shadowlamb.poll_servers()
+
+    async def goalbeat_timer(self):
+        if self.get_config_value('goalbeat_enabled'):
+            message = self.get_config_val('goalbeat_message')
+            if not isinstance(message, str) or not message or any(c in message for c in '\r\n\0'):
+                raise ValueError('Goalbeat message must be a non-empty single line')
+            send_to_mira(f'$chatgoal {message}')
 
     def health_changes(self, states: dict[str, bool]) -> list[tuple[str, bool]]:
         """Remember connector states and return only real transitions."""

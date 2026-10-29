@@ -4,6 +4,15 @@ Project-facing Mira context and helpers for the PyGDO chatbot system.
 `mira.hey_there` introduces Mira, links to her profile, and shares the story
 of choosing her name when Gizmore first asked his Codex friend what to call her.
 
+## Goalbeat
+
+The optional Goalbeat sends `$chatgoal <message>` to the configured Mira
+tmux pane every `goalbeat_delay` (default 30 minutes). `goalbeat_message`
+defaults to `Carry on if you have goals, or ask gizmore{telegram}`. It is
+enabled by default; the existing delivery helper sends Ctrl+C and can
+interrupt active work. Changes to the interval take effect when the module
+timers are reloaded.
+
 ## Reboot context
 
 The read-only `boot_context.sh` helper lists local repositories whose `origin`
