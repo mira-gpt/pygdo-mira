@@ -116,8 +116,36 @@ class module_mira_Test(GDOTestCase):
         self.assertEqual('de', module_mira.chat_language(channel))
         self.assertEqual('en', module_mira.chat_language(None))
         self.assertEqual('en', module_mira.chat_language(SimpleNamespace(get_lang_iso=lambda: 'invalid')))
-        self.assertEqual('$chat --lang=de\nhello\n$chat_done', module_mira.chat_event(channel, 'hello'))
+        self.assertEqual('$chat --lang=de --trigger=$\nhello\n$chat_done', module_mira.chat_event(channel, 'hello'))
         self.assertEqual(f'$heartbeat #{channel.get_id()} --lang=de\nhello', module_mira.heartbeat_event(channel, 'hello'))
+
+    def test_05bb_chatjoin_identifies_the_channel_and_joining_user(self):
+        channel = SimpleNamespace(get_id=lambda: 53, get_lang_iso=lambda: 'en', get_trigger=lambda: '.')
+        user = SimpleNamespace(
+            get_name=lambda: 'gizmore',
+            get_server=lambda: SimpleNamespace(get_name=lambda: 'euirc'),
+        )
+        with patch('gdo.mira.module_mira.Time.get_date', return_value='2026-10-28 18:13:00.000000'):
+            self.assertEqual(
+                '$chatjoin #53 --lang=en --trigger=.\n'
+                '2026-10-28 18:13:00.000000 #53 gizmore{euirc} joined',
+                module_mira.chatjoin_event(channel, user),
+            )
+
+    async def test_05bc_chatjoin_requires_the_heartbeat_opt_in(self):
+        mira = module_mira.instance()
+        channel = SimpleNamespace()
+        user = SimpleNamespace()
+        with patch.object(mira, 'heartbeat_enabled', return_value=False), \
+             patch('gdo.mira.module_mira.send_to_mira') as send:
+            await mira.on_user_joined_channel(user, channel)
+        send.assert_not_called()
+
+        with patch.object(mira, 'heartbeat_enabled', return_value=True), \
+             patch.object(mira, 'chatjoin_event', return_value='$chatjoin #53 --lang=en'), \
+             patch('gdo.mira.module_mira.send_to_mira') as send:
+            await mira.on_user_joined_channel(user, channel)
+        send.assert_called_once_with('$chatjoin #53 --lang=en')
 
     def test_05c_ibdes_keeps_the_incoming_reply_connector(self):
         effective = SimpleNamespace(name='gizmore-web')
@@ -248,8 +276,8 @@ class module_mira_Test(GDOTestCase):
             shadowlamb.reply_lines(payload, 'Lamb3'))
 
     def test_09a_shadowlamb_forwards_the_server_language(self):
-        server = SimpleNamespace(get_lang_iso=lambda: 'en')
-        self.assertEqual('$chat --lang=en\nreply\n$chat_done', shadowlamb.chat_event(server, 'reply\n'))
+        server = SimpleNamespace(get_lang_iso=lambda: 'en', get_trigger=lambda: '.')
+        self.assertEqual('$chat --lang=en --trigger=.\nreply\n$chat_done', shadowlamb.chat_event(server, 'reply\n'))
 
     def test_09b_shadowlamb_private_replies_skip_normal_chat_forwarding(self):
         author = SimpleNamespace(get_name=lambda: 'Lamb3')

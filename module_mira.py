@@ -125,6 +125,7 @@ class module_mira(GDO_Module):
         Application.EVENTS.add_timer_async(SHADOWLAMB_POLL_DELAY, self.shadowlamb_timer, Application.EVENTS.FOREVER)
         Application.EVENTS.subscribe_times('new_message', self.on_new_message, 2_238_239_328)
         Application.EVENTS.subscribe_times('msg_sent', self.on_sent_message, 2_238_239_328)
+        Application.EVENTS.subscribe_times('user_joined_channel', self.on_user_joined_channel, 2_238_239_328)
         self.subscribe('clear_cache', self.on_cc)
 
     async def on_cc(self):
@@ -169,6 +170,20 @@ class module_mira(GDO_Module):
         if getattr(message, '_mira_reply', False):
             return
         await self.on_message(message, True)
+
+    async def on_user_joined_channel(self, user: GDO_User, channel):
+        """Tell Mira about joins in channels that opted into idle attention.
+
+        A join can be useful context for a conversational agent, but it is not
+        public-chat input by itself.  Reuse the heartbeat opt-in so inactive
+        channels neither wake Mira nor disclose their member changes.
+        """
+        if not self.heartbeat_enabled(channel):
+            return
+        try:
+            send_to_mira(self.chatjoin_event(channel, user))
+        except Exception as error:
+            Logger.exception(error)
 
     def is_channel_enabled(self, channel) -> bool:
         from gdo.mira.method.enabled import enabled
@@ -328,11 +343,25 @@ class module_mira(GDO_Module):
         language = str(language).lower()
         return language if re.fullmatch(r'[a-z]{2}', language) else 'en'
 
+    @staticmethod
+    def chat_trigger(channel) -> str:
+        """Return the channel command trigger carried by routed chat events."""
+        trigger = channel.get_trigger() if channel else '$'
+        trigger = str(trigger)
+        return trigger if len(trigger) == 1 else '$'
+
     @classmethod
     def chat_event(cls, channel, payload: str) -> str:
         """Wrap routed context with an explicit, complete chat envelope."""
-        return (f'$chat --lang={cls.chat_language(channel)}\n' +
+        return (f'$chat --lang={cls.chat_language(channel)} --trigger={cls.chat_trigger(channel)}\n' +
                 payload.rstrip('\r\n') + '\n$chat_done')
+
+    @classmethod
+    def chatjoin_event(cls, channel, user: GDO_User) -> str:
+        """Describe one channel join without replaying the chat transcript."""
+        return (f'$chatjoin #{channel.get_id()} --lang={cls.chat_language(channel)} --trigger={cls.chat_trigger(channel)}\n'
+                f'{Time.get_date()} #{channel.get_id()} '
+                f'{user.get_name()}{{{user.get_server().get_name()}}} joined')
 
     @staticmethod
     def is_shadowlamb_reply(channel, author, server) -> bool:

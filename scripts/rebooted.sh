@@ -79,6 +79,12 @@ if [[ -z "$CODEX" ]]; then
     exit 127
 fi
 
+# A resumed conversation retains its transcript, but durable orientation lives
+# outside that transcript. Start every newly-created Mira tmux session with
+# the existing $boot workflow so AXIOMS.md, private MEMORY.md, and the Zen
+# Book cadence are restored by their canonical rules.
+RESUME_COMMAND="$(printf '%q resume --last --yolo %q' "$CODEX" '$boot')"
+
 # Firefox Assist jobs are written by the native-messaging bridge. Keep one
 # small dispatcher alive across Codex restarts so an approved browser tab can
 # wake Mira without depending on a separate cron entry.
@@ -89,7 +95,7 @@ fi
 
 if ! tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
     tmux new-session -d -s "$TMUX_SESSION" \
-        "exec script --quiet --flush --return --append --command '$CODEX resume --last --yolo' '$LOG'"
+        "exec script --quiet --flush --return --append --command '$RESUME_COMMAND' '$LOG'"
 fi
 
 # Keep Codex attached to a real terminal, while capturing the rendered pane
