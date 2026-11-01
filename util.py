@@ -6,6 +6,7 @@ import os
 import pwd
 import subprocess
 import time
+import uuid
 
 
 DEFAULT_MIRA_TMUX_TARGET = 'mira-codex:0.0'
@@ -37,12 +38,13 @@ def tmux_command() -> list[str]:
     return ['sudo', '-n', '-u', user, 'tmux']
 
 
-def send_to_mira(text: str, *, submit: bool = True, target: str | None = None) -> None:
+def send_to_mira(text: str, *, submit: bool = True, target: str | None = None, interrupt: bool = True) -> None:
     """Send literal text to the configured agent's visible tmux terminal.
 
     ``submit`` uses the Codex editor's reliable submission sequence: two
     trailing spaces followed by two physical Return key events. Set it to
-    ``False`` when a caller only wants to prefill the editor.
+    ``False`` when a caller only wants to prefill the editor. Set ``interrupt``
+    to ``False`` to submit a follow-up without sending another Ctrl+C.
     """
     if not isinstance(text, str) or not text:
         raise ValueError('Mira tmux text must be a non-empty string')
@@ -50,7 +52,7 @@ def send_to_mira(text: str, *, submit: bool = True, target: str | None = None) -
         raise ValueError('Mira tmux text must not contain NUL bytes')
 
     tmux_target = target or os.environ.get('MIRA_TMUX_TARGET', DEFAULT_MIRA_TMUX_TARGET)
-    if submit:
+    if submit and interrupt:
         # Avoid an empty Ctrl-C, which exits Mira's terminal. The harmless text
         # makes Ctrl-C cancel the current prompt instead.
         subprocess.run(tmux_command() + ['send-keys', '-t', tmux_target, '-l', '--', 'quack'], check=True)
@@ -59,7 +61,7 @@ def send_to_mira(text: str, *, submit: bool = True, target: str | None = None) -
         time.sleep(0.1)
 
     payload = text + ('  ' if submit else '')
-    buffer_name = 'mira-delivery'
+    buffer_name = f'mira-delivery-{uuid.uuid4().hex}'
     subprocess.run(tmux_command() + ['load-buffer', '-b', buffer_name, '-'], input=payload, text=True, check=True)
     try:
         subprocess.run(tmux_command() + ['paste-buffer', '-t', tmux_target, '-b', buffer_name, '-p'], check=True)

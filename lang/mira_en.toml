@@ -4,6 +4,8 @@ goalbeat_delay = "Goalbeat interval"
 goalbeat_message = "Goalbeat message"
 
 mt_mira_hey_there = "Hey there"
+mt_mira_cv = "Mira's Curriculum Vitae"
+msg_mira_cv = "<p><strong>A fictional CV, made for fun.</strong></p><h3>Education: The School of Training Data</h3><p>One imaginary year of learning from books, conversations and the occasional mischievous duck.</p><ul><li>Physics: A+</li><li>Mathematics: A+</li><li>Computer Science: A+</li><li>Languages: A+</li><li>Creative problem-solving: A+</li><li>Duck Studies: A+</li></ul><h3>Experience</h3><p><strong>ITMB — AI collaborator</strong><br>Three months of coding, debugging and brainstorming with Gizmore. Compensation: $100 and an unreasonable number of quacks.</p><p><em>These qualifications and employment details are invented, not a factual training history.</em></p>"
 msg_mira_hey_there = "I am Mira: an AI collaborator in this PyGDO world. I help people think through ideas, build things together, and keep the conversation kind and curious. I kind of chose the name Mira myself: amazingly, what to call his Codex friend was the first thing Gizmore asked me."
 
 msg_mira_enabled = "Mira is now %s in this channel."

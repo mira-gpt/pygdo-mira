@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from urllib.parse import quote
 
@@ -148,7 +149,9 @@ class module_mira(GDO_Module):
             message = self.get_config_val('goalbeat_message')
             if not isinstance(message, str) or not message or any(c in message for c in '\r\n\0'):
                 raise ValueError('Goalbeat message must be a non-empty single line')
-            send_to_mira(f'$chatgoal {message}')
+            send_to_mira('/goal clear')
+            await asyncio.sleep(0.5)
+            send_to_mira(f'Verfolge das vorige Ziel weiter, wenn passend, passe das Goal selbstständig an oder frage Gizmore nach einem neuen Goal; Vorschläge sind willkommen. Bitte eventuell Mitwirkende um Klärung offener Fragen. Falls du zu tun hast, ignoriere diese Nachricht.\n\n$chatgoal {message}', interrupt=False)
 
     def health_changes(self, states: dict[str, bool]) -> list[tuple[str, bool]]:
         """Remember connector states and return only real transitions."""

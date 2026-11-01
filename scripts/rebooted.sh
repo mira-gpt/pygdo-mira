@@ -131,7 +131,7 @@ set -euo pipefail
 
 # This is intentionally the only bridge from the Dog user to Mira's tmux
 # server. Keep it limited to the commands needed by send_to_mira().
-case "${1:-}" in
+case "\${1:-}" in
     send-keys|load-buffer|paste-buffer|delete-buffer) ;;
     *)
         echo "mira-tmux: unsupported command" >&2

@@ -1,4 +1,5 @@
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -22,6 +23,40 @@ from gdotest.TestUtil import cli_plug, reinstall_module, cli_gizmore, GDOTestCas
 
 
 class GoalbeatTest(unittest.IsolatedAsyncioTestCase):
+    def test_delivery_buffers_are_unique_and_cleaned_up(self):
+        with patch('gdo.mira.util.subprocess.run') as run, patch('gdo.mira.util.time.sleep'):
+            send_to_mira('first', target='test:0.0', interrupt=False)
+            send_to_mira('second', target='test:0.0', interrupt=False)
+        commands = [call.args[0] for call in run.call_args_list]
+        loads = [cmd for cmd in commands if 'load-buffer' in cmd]
+        deletes = [cmd for cmd in commands if 'delete-buffer' in cmd]
+        names = [cmd[cmd.index('-b') + 1] for cmd in loads]
+        self.assertEqual(2, len(set(names)))
+        self.assertEqual(names, [cmd[cmd.index('-b') + 1] for cmd in deletes])
+
+    async def test_failed_clear_does_not_send_followup(self):
+        mira = module_mira()
+        with patch.object(mira, 'get_config_value', return_value=True), \
+             patch.object(mira, 'get_config_val', return_value='Test message'), \
+             patch('gdo.mira.module_mira.send_to_mira', side_effect=OSError('tmux failed')) as send:
+            with self.assertRaisesRegex(OSError, 'tmux failed'):
+                await mira.goalbeat_timer()
+            send.assert_called_once_with('/goal clear')
+
+    async def test_goalbeat_uses_one_interrupt_and_two_literal_payloads(self):
+        mira = module_mira()
+        with patch.object(mira, 'get_config_value', return_value=True), \
+             patch.object(mira, 'get_config_val', return_value='Test message'), \
+             patch('gdo.mira.util.subprocess.run') as run, \
+             patch('gdo.mira.util.time.sleep'), \
+             patch('gdo.mira.module_mira.asyncio.sleep'):
+            await mira.goalbeat_timer()
+        commands = [call.args[0] for call in run.call_args_list]
+        self.assertEqual(1, sum('C-c' in command for command in commands))
+        inputs = [call.kwargs['input'] for call in run.call_args_list if 'input' in call.kwargs]
+        self.assertEqual(['/goal clear  ', 'Verfolge das vorige Ziel weiter, wenn passend, passe das Goal selbstständig an oder frage Gizmore nach einem neuen Goal; Vorschläge sind willkommen. Bitte eventuell Mitwirkende um Klärung offener Fragen. Falls du zu tun hast, ignoriere diese Nachricht.\n\n$chatgoal Test message  '], inputs)
+        self.assertEqual(4, sum(command[-1] == 'Enter' for command in commands))
+
     async def test_delivery_is_optional_and_uses_configured_message(self):
         mira = module_mira()
         with patch.object(mira, 'get_config_value', return_value=False), patch('gdo.mira.module_mira.send_to_mira') as send:
@@ -29,7 +64,10 @@ class GoalbeatTest(unittest.IsolatedAsyncioTestCase):
             send.assert_not_called()
         with patch.object(mira, 'get_config_value', return_value=True), patch.object(mira, 'get_config_val', return_value='Test message'), patch('gdo.mira.module_mira.send_to_mira') as send:
             await mira.goalbeat_timer()
-            send.assert_called_once_with('$chatgoal Test message')
+            self.assertEqual(2, send.call_count)
+            self.assertEqual('/goal clear', send.call_args_list[0].args[0])
+            self.assertEqual(('Verfolge das vorige Ziel weiter, wenn passend, passe das Goal selbstständig an oder frage Gizmore nach einem neuen Goal; Vorschläge sind willkommen. Bitte eventuell Mitwirkende um Klärung offener Fragen. Falls du zu tun hast, ignoriere diese Nachricht.\n\n$chatgoal Test message',), send.call_args_list[1].args)
+            self.assertEqual({'interrupt': False}, send.call_args_list[1].kwargs)
         with patch.object(mira, 'get_config_value', return_value=True), patch.object(mira, 'get_config_val', return_value='bad\nmessage'), patch('gdo.mira.module_mira.send_to_mira') as send:
             with self.assertRaises(ValueError):
                 await mira.goalbeat_timer()
@@ -50,6 +88,16 @@ class GoalbeatTest(unittest.IsolatedAsyncioTestCase):
         with patch.object(Application, 'EVENTS', events, create=True), patch.object(mira, 'get_config_value', return_value=1800):
             mira.gdo_subscribe_events()
         events.add_timer_async.assert_any_call(1800, mira.goalbeat_timer, events.FOREVER)
+
+    def test_installer_expands_tmux_helper_at_runtime(self):
+        script = (Path(__file__).parents[1] / 'scripts' / 'rebooted.sh').read_text()
+        template = script.split('cat >"$TMUX_HELPER" <<EOF\n', 1)[1].split('\nEOF', 1)[0]
+        rendered = subprocess.run(
+            ['bash', '-c', 'MIRA_USER="$(id -un)"; cat <<EOF\n' + template + '\nEOF'],
+            check=True, text=True, capture_output=True,
+        ).stdout
+        self.assertIn('case "${1:-}" in', rendered)
+        self.assertIn('"$@"', rendered)
 
 
 class module_mira_Test(GDOTestCase):
@@ -95,13 +143,29 @@ class module_mira_Test(GDOTestCase):
         self.assertIn('profile:', chat_output)
         self.assertNotIn('None', chat_output)
 
+    def test_03b_cv_is_playful_and_clearly_fictional(self):
+        out = web_plug('mira.cv.html').exec()
+        for expected in ('fictional CV', 'Physics: A+', 'ITMB', 'Three months', '$100'):
+            self.assertIn(expected, out)
+
     def test_04_send_to_mira_cancels_prompt_before_pasting(self):
         with patch('gdo.mira.util.subprocess.run') as run, patch('gdo.mira.util.time.sleep'):
             send_to_mira('$changes gdo/mira/util.py', target='test:0.0')
         calls = [call.args[0] for call in run.call_args_list]
         self.assertEqual(['tmux', 'send-keys', '-t', 'test:0.0', '-l', '--', 'quack'], calls[0])
         self.assertEqual(['tmux', 'send-keys', '-t', 'test:0.0', 'C-c'], calls[1])
-        self.assertEqual(['tmux', 'load-buffer', '-b', 'mira-delivery', '-'], calls[2])
+        self.assertEqual(['tmux', 'load-buffer', '-b'], calls[2][:3])
+        self.assertTrue(calls[2][3].startswith('mira-delivery-'))
+        self.assertEqual('-', calls[2][4])
+
+    def test_04_send_to_mira_can_submit_without_interrupting(self):
+        with patch('gdo.mira.util.subprocess.run') as run, patch('gdo.mira.util.time.sleep'):
+            send_to_mira('$chatgoal test', target='test:0.0', interrupt=False)
+        calls = [call.args[0] for call in run.call_args_list]
+        self.assertEqual(['tmux', 'load-buffer', '-b'], calls[0][:3])
+        self.assertTrue(calls[0][3].startswith('mira-delivery-'))
+        self.assertEqual('-', calls[0][4])
+        self.assertFalse(any('C-c' in call for call in calls))
 
     def test_04a_tmux_delivery_can_target_a_non_mira_os_user(self):
         with patch.dict(os.environ, {'MIRA_TMUX_USER': 'shippi', 'MIRA_TMUX_HELPER': ''}, clear=False), \

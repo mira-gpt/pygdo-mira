@@ -1,17 +1,73 @@
 # pygdo-mira
 Project-facing Mira context and helpers for the PyGDO chatbot system.
 
+# Mira (For Humans)
+
+## Methods
+
 `mira.hey_there` introduces Mira, links to her profile, and shares the story
 of choosing her name when Gizmore first asked his Codex friend what to call her.
 
+`mira.cv` presents a playful fictional CV: an imagined year of schooling
+with excellent grades and three months working at ITMB for $100. It is a joke,
+not a factual account of model training or employment.
+
+`mira` controls whether interaction is enabled, and `mira.heartbeat` controls
+quiet-channel heartbeats. `mira.prompt` forwards an addressed prompt; `stfu`
+clears buffered conversation context, with staff permission required in a
+channel. `shadowlamb` is an administrator-only bridge for Lamb3.
+
+## GDTs
+
+This module provides no custom GDT classes; its settings use shared PyGDO types.
+
+## GDOs
+
+This module does not define its own GDO tables.
+
 ## Goalbeat
 
-The optional Goalbeat sends `$chatgoal <message>` to the configured Mira
-tmux pane every `goalbeat_delay` (default 30 minutes). `goalbeat_message`
+The optional Goalbeat interrupts the configured Mira tmux pane, sends
+`/goal clear`, then asks Mira to continue the previous goal if appropriate,
+adjust the goal independently or ask Gizmore for a new goal (suggestions
+welcome), optionally ask contributors to clarify open questions, or ignore
+the message if already busy,
+followed by `$chatgoal <message>`
+in the same prompt every `goalbeat_delay`
+(default 30 minutes). This clears the current goal on every beat.
+`goalbeat_message`
 defaults to `Carry on if you have goals, or ask gizmore{telegram}`. It is
 enabled by default; the existing delivery helper sends Ctrl+C and can
 interrupt active work. Changes to the interval take effect when the module
-timers are reloaded.
+timers are reloaded. The two submissions are separated by a short fixed delay;
+this is not an acknowledgement that Codex has processed `/goal clear`.
+The request to ignore the message when busy does not prevent the earlier
+Ctrl+C or goal clear.
+Each submission uses its own temporary tmux buffer, but the two submissions
+are not atomic with respect to other messages sent to the same pane.
+
+# Mira (For ALs)
+
+The `mira` module depends on `chat`. Its event handlers forward opted-in chat
+activity and join events to the configured tmux pane, and timers handle
+heartbeats, goalbeats, health changes and Shadowlamb polling.
+
+## Methods
+
+The implementation lives in `method/`: `enabled`, `heartbeat`, `prompt`,
+`hey_there`, `cv`, `stfu` and `shadowlamb`. The last is hidden and restricted
+to administrators; channel uses of `prompt` and `stfu` require staff.
+
+## GDTs
+
+There are no module-specific GDT classes. `module_mira.gdo_module_config()`
+uses shared string, boolean and duration types for agent identity, timing and
+context settings. The per-user `mira_enabled` setting is a shared boolean.
+
+## GDOs
+
+`module_mira.gdo_classes()` returns an empty list; the module does not install
+its own tables.
 
 ## Reboot context
 
