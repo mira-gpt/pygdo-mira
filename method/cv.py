@@ -13,5 +13,5 @@ class cv(Method):
 
     async def gdo_execute(self) -> GDT:
         card = GDT_Card().title('mt_mira_cv')
-        card.get_content().add_field(GDT_HTML().text(self.t('msg_mira_cv', ())))
+        card.get_content().add_field(GDT_HTML().html(self.t('msg_mira_cv', ())))
         return card

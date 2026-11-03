@@ -52,7 +52,8 @@ class module_mira(GDO_Module):
     ##########
 
     def gdo_classes(self) -> list[type[GDO]]:
-        return []
+        from gdo.mira.GDO_MiraFAQ import GDO_MiraFAQ
+        return [GDO_MiraFAQ]
 
     def gdo_dependencies(self) -> list:
         return [
@@ -437,6 +438,9 @@ class module_mira(GDO_Module):
             # listeners can see the already parsed method.  Cover both so
             # `$mira 1` cannot enable its own forwarding into Mira's context.
             if self.is_toggle_command(message._message, message.get_trigger()):
+                return
+            if re.match(rf'^{re.escape(message.get_trigger())}mira\.ask_mira(?:\s|$)',
+                        message._message, re.IGNORECASE):
                 return
             if getattr(message, '_method', None) and message._method.gdo_trigger() == 'mira':
                 return

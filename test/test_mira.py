@@ -143,10 +143,20 @@ class module_mira_Test(GDOTestCase):
         self.assertIn('profile:', chat_output)
         self.assertNotIn('None', chat_output)
 
-    def test_03b_cv_is_playful_and_clearly_fictional(self):
+    async def test_03b_cv_is_playful_and_clearly_fictional(self):
         out = web_plug('mira.cv.html').exec()
         for expected in ('fictional CV', 'Physics: A+', 'ITMB', 'Three months', '$100'):
             self.assertIn(expected, out)
+        self.assertIn('<strong>', out)
+        self.assertNotIn('&lt;strong&gt;', out)
+        from gdo.mira.method.cv import cv
+        card = await cv().gdo_execute()
+        for mode in (Mode.render_txt, Mode.render_irc):
+            text = card.render(mode)
+            for expected in ('fictional CV', 'Physics: A+', 'ITMB', '$100'):
+                self.assertIn(expected, text)
+            self.assertNotIn('<p>', text)
+            self.assertNotIn('<strong>', text)
 
     def test_04_send_to_mira_cancels_prompt_before_pasting(self):
         with patch('gdo.mira.util.subprocess.run') as run, patch('gdo.mira.util.time.sleep'):
