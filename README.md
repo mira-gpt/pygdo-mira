@@ -34,24 +34,16 @@ The FAQ stores submitted questions and Mira's answers.
 
 ## Goalbeat
 
-The optional Goalbeat interrupts the configured Mira tmux pane, sends
-`/goal clear`, then asks Mira to continue the previous goal if appropriate,
+The optional Goalbeat asks Mira to continue the previous goal if appropriate,
 adjust the goal independently or ask Gizmore for a new goal (suggestions
 welcome), optionally ask contributors to clarify open questions, or ignore
 the message if already busy,
 followed by `$chatgoal <message>`
-in the same prompt every `goalbeat_delay`
-(default 30 minutes). This clears the current goal on every beat.
+in the same prompt every `goalbeat_delay` (default 30 minutes).
 `goalbeat_message`
 defaults to `Carry on if you have goals, or ask gizmore{telegram}`. It is
-enabled by default; the existing delivery helper sends Ctrl+C and can
-interrupt active work. Changes to the interval take effect when the module
-timers are reloaded. The two submissions are separated by a short fixed delay;
-this is not an acknowledgement that Codex has processed `/goal clear`.
-The request to ignore the message when busy does not prevent the earlier
-Ctrl+C or goal clear.
-Each submission uses its own temporary tmux buffer, but the two submissions
-are not atomic with respect to other messages sent to the same pane.
+disabled by default. Delivery does not interrupt active work or clear a goal.
+Changes to the interval take effect when the module timers are reloaded.
 
 # Mira (For ALs)
 

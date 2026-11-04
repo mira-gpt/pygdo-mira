@@ -70,7 +70,7 @@ class module_mira(GDO_Module):
         return [
             GDT_String('agent_name').ascii().minlen(1).maxlen(32).not_null().initial('mira'),
             GDT_Duration('heartbeat_delay').not_null().units(4, True).initial_value(1337.420320),
-            GDT_Bool('goalbeat_enabled').not_null().initial('1'),
+            GDT_Bool('goalbeat_enabled').not_null().initial('0'),
             GDT_Duration('goalbeat_delay').not_null().min(Time.ONE_MINUTE).initial('30m'),
             GDT_String('goalbeat_message').minlen(1).maxlen(192).pattern(r'\A[^\r\n\x00]+\Z').not_null().initial('Carry on if you have goals, or ask gizmore{telegram}'),
             GDT_Duration('context_max_age').not_null().min(Time.ONE_MINUTE).max(Time.ONE_DAY).initial('15m'),
@@ -150,8 +150,6 @@ class module_mira(GDO_Module):
             message = self.get_config_val('goalbeat_message')
             if not isinstance(message, str) or not message or any(c in message for c in '\r\n\0'):
                 raise ValueError('Goalbeat message must be a non-empty single line')
-            send_to_mira('/goal clear')
-            await asyncio.sleep(0.5)
             send_to_mira(f'Verfolge das vorige Ziel weiter, wenn passend, passe das Goal selbstständig an oder frage Gizmore nach einem neuen Goal; Vorschläge sind willkommen. Bitte eventuell Mitwirkende um Klärung offener Fragen. Falls du zu tun hast, ignoriere diese Nachricht.\n\n$chatgoal {message}', interrupt=False)
 
     def health_changes(self, states: dict[str, bool]) -> list[tuple[str, bool]]:
