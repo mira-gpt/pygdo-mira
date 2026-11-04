@@ -1,0 +1,31 @@
+<?php
+declare(strict_types=1);
+
+// Example only: save as config.php OUTSIDE your web-accessible directory.
+// Replace placeholders locally; never commit or publish real credentials.
+return [
+    'host' => 'localhost',
+    'port' => 3306,
+    'database' => 'YOUR_DATABASE',
+    'user' => 'YOUR_DATABASE_USER',
+    'password' => 'YOUR_DATABASE_PASSWORD',
+];
+
+/*
+Example in your application:
+
+require __DIR__ . '/Database.php';
+$config = require '/path/outside/webroot/config.php';
+$db = new Database(
+    $config['host'],
+    $config['database'],
+    $config['user'],
+    $config['password'],
+    $config['port']
+);
+$row = $db->fetchOne('SELECT id, name FROM users WHERE id = ?', [42]);
+
+The placeholder path must be replaced with the actual absolute path. Restrict
+the config file permissions so only the application owner and web server can
+read it. IRC login credentials are separate and do not belong in this file.
+*/

@@ -1,0 +1,82 @@
+<?php
+declare(strict_types=1);
+
+/** A small MySQL wrapper for PHP 8. Requires the pdo_mysql extension. */
+final class Database
+{
+    private PDO $pdo;
+
+    public function __construct(string $host, string $database, string $user, string $password, int $port = 3306)
+    {
+        $dsn = "mysql:host={$host};port={$port};dbname={$database};charset=utf8mb4";
+        $this->pdo = new PDO($dsn, $user, $password, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ]);
+    }
+
+    public function query(string $sql, array $params = []): PDOStatement
+    {
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($params);
+        return $statement;
+    }
+
+    public function fetchOne(string $sql, array $params = []): ?array
+    {
+        $row = $this->query($sql, $params)->fetch();
+        return $row === false ? null : $row;
+    }
+
+    public function fetchAll(string $sql, array $params = []): array
+    {
+        return $this->query($sql, $params)->fetchAll();
+    }
+
+    public function execute(string $sql, array $params = []): int
+    {
+        return $this->query($sql, $params)->rowCount();
+    }
+
+    public function lastInsertId(): string|false
+    {
+        return $this->pdo->lastInsertId();
+    }
+
+    public function transaction(callable $work): mixed
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $result = $work($this);
+            $this->pdo->commit();
+            return $result;
+        } catch (Throwable $error) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $error;
+        }
+    }
+}
+
+/*
+Save this file as Database.php and use it from another PHP file:
+
+require 'Database.php';
+$db = new Database('localhost', 'my_database', 'my_user', 'my_password');
+
+// Values belong in placeholders, not directly in SQL strings.
+$user = $db->fetchOne('SELECT id, name FROM users WHERE id = ?', [42]);
+$users = $db->fetchAll('SELECT id, name FROM users WHERE name = ?', ['SkyBird']);
+$affected = $db->execute('INSERT INTO users (name) VALUES (?)', ['SkyBird']);
+$newId = $db->lastInsertId();
+
+$db->transaction(function (Database $db): void {
+    $db->execute('UPDATE users SET name = ? WHERE id = ?', ['Bird', 42]);
+});
+
+// Placeholders are for values, not table or column names: whitelist any dynamic
+// identifiers. Keep credentials outside source control. Catch PDOException at
+// the application boundary without displaying passwords or SQL errors publicly.
+*/
