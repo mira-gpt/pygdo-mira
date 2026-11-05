@@ -26,9 +26,7 @@ if TYPE_CHECKING:
     from gdo.ui.GDT_Page import GDT_Page
 
 
-# Default address for backwards compatibility. Runtime matching uses the
-# configurable agent name below, so a second installation can answer to e.g.
-# ``simion`` without also reacting to ``mira``.
+# Default address retained for callers that need the conventional Mira name.
 MIRA_ADDRESS = re.compile(r'(?<![a-z])mira(?![a-z])', re.IGNORECASE)
 CHAT_CONTEXT_MAX_BYTES = 7_770
 SHADOWLAMB_POLL_DELAY = 0.25
@@ -69,6 +67,7 @@ class module_mira(GDO_Module):
     def gdo_module_config(self) -> list[GDT]:
         return [
             GDT_String('agent_name').ascii().minlen(1).maxlen(32).not_null().initial('mira'),
+            GDT_String('mira_triggered_by').maxlen(192).not_null().initial('mira,allagents').tooltip('tt_mira_triggered_by'),
             GDT_Duration('heartbeat_delay').not_null().units(4, True).initial_value(1337.420320),
             GDT_Bool('goalbeat_enabled').not_null().initial('0'),
             GDT_Duration('goalbeat_delay').not_null().min(Time.ONE_MINUTE).initial('30m'),
@@ -85,7 +84,9 @@ class module_mira(GDO_Module):
         return re.compile(rf'(?<![a-z]){re.escape(agent_name)}(?![a-z])', re.IGNORECASE)
 
     def is_addressed(self, payload: str) -> bool:
-        return bool(self.address_pattern(self.cfg_agent_name()).search(payload))
+        names = self.get_config_val('mira_triggered_by') or ''
+        return any(self.address_pattern(name).search(payload)
+                   for name in (part.strip() for part in names.split(',')) if name)
 
     def cfg_heartbeat_delay(self) -> float:
         return self.get_config_value('heartbeat_delay')

@@ -51,6 +51,11 @@ The `mira` module depends on `chat`. Its event handlers forward opted-in chat
 activity and join events to the configured tmux pane, and timers handle
 heartbeats, goalbeats, health changes and Shadowlamb polling.
 
+`mira_triggered_by` is a comma-separated list of nicknames that trigger a chat
+context flush; the default is `mira,allagents`. Matching is case-insensitive
+and respects the existing nickname boundaries. Channel and user forwarding
+permissions still apply.
+
 ## Methods
 
 The implementation lives in `method/`: `ask_mira`, `faq`, `faq_pending`, `faq_answer`,
