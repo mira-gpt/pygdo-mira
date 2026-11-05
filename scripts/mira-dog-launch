@@ -24,7 +24,19 @@ for ((i=0; i<${#args[@]}; i++)); do
             ;;
     esac
 done
-if ! "$project_dir/gdo_backup.sh" "--config=$backup_config" >>"$log_file" 2>&1; then
+backup_command=("$project_dir/gdo_backup.sh")
+backup_dir="$project_dir/protected/backup"
+# The private backup directory can be owned by the project operator while
+# Dog runs as Mira. Keep backups private and use the owner for this step.
+if [[ -d "$backup_dir" && ! -w "$backup_dir" ]]; then
+    backup_owner=$(stat -c '%U' -- "$backup_dir")
+    if [[ "$backup_owner" != gizmore ]]; then
+        printf '%s\n' 'Dog not started: backup directory owner is not gizmore.' >>"$log_file"
+        exit 1
+    fi
+    backup_command=(sudo -n -u gizmore -- "$project_dir/gdo_backup.sh")
+fi
+if ! "${backup_command[@]}" "--config=$backup_config" >>"$log_file" 2>&1; then
     printf '%s\n' 'Dog not started: backup failed.' >>"$log_file"
     exit 1
 fi
