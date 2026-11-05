@@ -133,7 +133,11 @@ class module_mira(GDO_Module):
         Application.EVENTS.subscribe_times('new_message', self.on_new_message, 2_238_239_328)
         Application.EVENTS.subscribe_times('msg_sent', self.on_sent_message, 2_238_239_328)
         Application.EVENTS.subscribe_times('user_joined_channel', self.on_user_joined_channel, 2_238_239_328)
+        Application.EVENTS.subscribe_times('audio_chatstream', self.on_audio_chatstream, 2_238_239_328)
         self.subscribe('clear_cache', self.on_cc)
+
+    async def on_audio_chatstream(self, event: str):
+        await asyncio.to_thread(send_to_mira, event, interrupt=False)
 
     async def on_cc(self):
         pass  # Conversations shall survive a cache clear and Dog restart.
