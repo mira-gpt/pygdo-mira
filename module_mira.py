@@ -70,6 +70,7 @@ class module_mira(GDO_Module):
             GDT_String('agent_name').ascii().minlen(1).maxlen(32).not_null().initial('mira'),
             GDT_String('mira_triggered_by').maxlen(192).not_null().initial('mira,allagents').tooltip('tt_mira_triggered_by'),
             GDT_MiraMood('mira_mood').not_null().initial('idle').tooltip('tt_mira_mood'),
+            GDT_Bool('mira_quacking').not_null().initial('0').tooltip('tt_mira_quacking'),
             GDT_Duration('heartbeat_delay').not_null().units(4, True).initial_value(1337.420320),
             GDT_Bool('goalbeat_enabled').not_null().initial('0'),
             GDT_Duration('goalbeat_delay').not_null().min(Time.ONE_MINUTE).initial('30m'),
