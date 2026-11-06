@@ -5,6 +5,21 @@ Project-facing Mira context and helpers for the PyGDO chatbot system.
 
 ## Methods
 
+`$mira.readalong [--lang=de|en] <url>` fetches a direct HTTP(S) UTF-8 plain
+text URL and reads successive sections via
+Audio, whose speech events drive the duck and caption when Video is active.
+Without `--lang`, a local German/English heuristic chooses the voice, falling
+back to the user's language when uncertain. `$readalong --stop` cancels active
+and queued readings, not unrelated speech;
+explicit `--lang` translates via the configured `translate` module (Google
+Cloud, network and possible charges) and selects that voice. Translation must
+be configured and failures stop the reading; queue acceptance is not playback
+confirmation. Owner permission is required. Text is limited to 20,000
+characters; text is not kept as a file.
+Redirects, HTML and URL credentials are rejected; use a direct text URL.
+Runs of three or more identical punctuation/special characters are omitted
+before speech, so decorative separators are not read aloud.
+
 `mira.hey_there` introduces Mira, links to her profile, and shares the story
 of choosing her name when Gizmore first asked his Codex friend what to call her.
 
