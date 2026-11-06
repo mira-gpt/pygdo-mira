@@ -57,7 +57,8 @@ and respects the existing nickname boundaries. Channel and user forwarding
 permissions still apply.
 
 `mira_mood` is a persistent `GDT_MiraMood` animation key (`idle`, `quacking`,
-or `lol`; default `idle`). `$mira.mood <key>` queues a change for Dog. If the
+or `sad`; default `idle`). Older `lol` base values fall back to `idle` until
+changed. LOL remains a temporary animation. `$mira.mood <key>` queues a change for Dog. If the
 optional live 3D duck is active, Video applies the matching animation; when it
 is enabled later, it reads the saved mood. Changing mood does not start Video
 or capture audio. Temporary speech animations return to the current saved mood;

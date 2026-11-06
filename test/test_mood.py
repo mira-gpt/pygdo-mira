@@ -19,19 +19,19 @@ class MoodTest(unittest.IsolatedAsyncioTestCase):
         field = next(g for g in module_mira().gdo_module_config() if g.get_name() == 'mira_mood')
         self.assertIsInstance(field, GDT_MiraMood)
         self.assertEqual('idle', field.get_initial())
-        self.assertEqual({'idle', 'quacking', 'lol'}, set(field.init_choices()))
+        self.assertEqual({'idle', 'quacking', 'sad'}, set(field.init_choices()))
         self.assertTrue(field.has_tooltip())
 
     def test_command_queues_change(self):
         method = mood()
-        method.param_val = MagicMock(return_value='lol')
+        method.param_val = MagicMock(return_value='sad')
         method.reply = MagicMock(return_value='queued')
         db = MagicMock()
         db.is_in_transaction.return_value = False
         with patch.object(Application, 'db', return_value=db), \
                 patch('gdo.mira.method.mood.IPC.send_to_dog') as send:
             self.assertEqual('queued', method.gdo_execute())
-        send.assert_called_once_with('mira.ipc_mood', ['lol'])
+        send.assert_called_once_with('mira.ipc_mood', ['sad'])
 
     async def test_dog_saves_and_reapplies_even_same_mood(self):
         method = ipc_mood()
@@ -49,11 +49,16 @@ class MoodTest(unittest.IsolatedAsyncioTestCase):
         connector = MagicMock()
         module.connector = connector
         field = MagicMock()
-        field.get_val.return_value = 'lol'
+        field.get_val.return_value = 'sad'
         await module.on_mira_mood_changed(MagicMock(), field)
-        connector.duck_animation.assert_called_once_with('lol')
+        connector.duck_animation.assert_called_once_with('sad')
         connector.start.assert_not_called()
         connector.duck3d.assert_not_called()
+
+    def test_old_lol_mood_falls_back_without_changing_config(self):
+        module = module_mira()
+        module.get_config_val = MagicMock(return_value='lol')
+        self.assertEqual('idle', module.cfg_mira_mood())
 
     def test_duck_enabling_applies_saved_base_mood(self):
         method = ipc_duck3d()
