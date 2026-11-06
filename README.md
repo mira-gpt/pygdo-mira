@@ -56,18 +56,24 @@ context flush; the default is `mira,allagents`. Matching is case-insensitive
 and respects the existing nickname boundaries. Channel and user forwarding
 permissions still apply.
 
+`mira_mood` is a persistent `GDT_MiraMood` animation key (`idle`, `quacking`,
+or `lol`; default `idle`). `$mira.mood <key>` queues a change for Dog. If the
+optional live 3D duck is active, Video applies the matching animation; when it
+is enabled later, it reads the saved mood. Changing mood does not start Video
+or capture audio. Temporary speech animations return to the current saved mood;
+direct `$duck.anim` commands override it until the next mood change.
+
 ## Methods
 
 The implementation lives in `method/`: `ask_mira`, `faq`, `faq_pending`, `faq_answer`,
 `enabled`, `heartbeat`, `prompt`,
-`hey_there`, `cv`, `stfu` and `shadowlamb`. The last is hidden and restricted
+`hey_there`, `cv`, `stfu`, `mood` and `shadowlamb`. The last is hidden and restricted
 to administrators; channel uses of `prompt` and `stfu` require staff.
 
 ## GDTs
 
-There are no module-specific GDT classes. `module_mira.gdo_module_config()`
-uses shared string, boolean and duration types for agent identity, timing and
-context settings. The per-user `mira_enabled` setting is a shared boolean.
+`GDT_MiraMood` selects the persistent animation key. Other configuration uses
+shared string, boolean and duration types; `mira_enabled` is a shared boolean.
 
 ## GDOs
 

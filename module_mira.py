@@ -19,6 +19,7 @@ from gdo.core.connector.Bash import Bash
 from gdo.date.GDT_Duration import GDT_Duration
 from gdo.date.Time import Time
 from gdo.mira.util import send_to_mira
+from gdo.mira.GDT_MiraMood import GDT_MiraMood
 
 from typing import TYPE_CHECKING
 
@@ -68,6 +69,7 @@ class module_mira(GDO_Module):
         return [
             GDT_String('agent_name').ascii().minlen(1).maxlen(32).not_null().initial('mira'),
             GDT_String('mira_triggered_by').maxlen(192).not_null().initial('mira,allagents').tooltip('tt_mira_triggered_by'),
+            GDT_MiraMood('mira_mood').not_null().initial('idle').tooltip('tt_mira_mood'),
             GDT_Duration('heartbeat_delay').not_null().units(4, True).initial_value(1337.420320),
             GDT_Bool('goalbeat_enabled').not_null().initial('0'),
             GDT_Duration('goalbeat_delay').not_null().min(Time.ONE_MINUTE).initial('30m'),
@@ -77,6 +79,9 @@ class module_mira(GDO_Module):
 
     def cfg_agent_name(self) -> str:
         return self.get_config_value('agent_name')
+
+    def cfg_mira_mood(self) -> str:
+        return self.get_config_val('mira_mood') or 'idle'
 
     @staticmethod
     def address_pattern(agent_name: str) -> re.Pattern:

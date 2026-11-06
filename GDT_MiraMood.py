@@ -1,0 +1,9 @@
+from gdo.core.GDT_Enum import GDT_Enum
+
+
+class GDT_MiraMood(GDT_Enum):
+    """Persistent mood keys map directly to the duck's animation keys."""
+
+    def __init__(self, name='mira_mood'):
+        super().__init__(name)
+        self.choices({'idle': 'Idle', 'quacking': 'Quacking', 'lol': 'LOL'})
