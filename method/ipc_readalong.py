@@ -3,6 +3,7 @@ from gdo.base.Logger import Logger
 from gdo.base.Method import Method
 from gdo.core.GDT_String import GDT_String
 from gdo.mira.ReadAlong import detect_voice, fetch_text, play, split_text, start
+from gdo.audio.language import VOICES
 
 
 class ipc_readalong(Method):
@@ -20,7 +21,7 @@ class ipc_readalong(Method):
             try:
                 target = self.param_val('target')
                 voice = self.param_val('voice')
-                if target not in ('none', 'en', 'de') or voice not in ('en', 'de'):
+                if (target != 'none' and target not in VOICES) or voice not in VOICES:
                     raise ValueError('Unsupported readalong language')
                 start(self._play(self.param_val('url'), '' if target == 'none' else target, voice))
             except (ValueError, RuntimeError, OSError) as error:

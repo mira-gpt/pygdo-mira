@@ -5,7 +5,7 @@ from gdo.audio.language import VOICES, speech_language
 from gdo.base.Application import Application
 from gdo.base.IPC import IPC
 from gdo.base.Method import Method
-from gdo.core.GDT_Enum import GDT_Enum
+from gdo.language.GDT_Language import GDT_Language
 from gdo.core.GDT_String import GDT_String
 from gdo.core.GDT_Bool import GDT_Bool
 
@@ -21,7 +21,7 @@ class readalong(Method):
     def gdo_parameters(self):
         return [GDT_String('url').maxlen(2048).positional().tooltip('tt_mira_readalong_url'),
                 GDT_Bool('stop').initial('0').tooltip('tt_mira_readalong_stop'),
-                GDT_Enum('lang').choices({'en': 'English', 'de': 'Deutsch'}).tooltip('tt_mira_readalong_lang')]
+                GDT_Language('lang').audiolangs().tooltip('tt_mira_readalong_lang')]
 
     async def gdo_execute(self):
         try:
@@ -41,7 +41,7 @@ class readalong(Method):
             target = self.param_val('lang') or ''
             voice = speech_language(self, target or None)
             if voice not in VOICES:
-                raise ValueError('No speech voice for this language; select --lang=en or --lang=de')
+                raise ValueError('No speech voice for this language')
             args = ('mira.ipc_readalong', [url, target or 'none', voice])
             if len(msgspec.json.encode(args[1])) > IPC.MAX_EVENT_ARG_SIZE:
                 raise ValueError('URL exceeds IPC limit')
