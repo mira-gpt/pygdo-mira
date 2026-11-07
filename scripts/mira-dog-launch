@@ -40,4 +40,4 @@ if ! "${backup_command[@]}" "--config=$backup_config" >>"$log_file" 2>&1; then
     printf '%s\n' 'Dog not started: backup failed.' >>"$log_file"
     exit 1
 fi
-exec env PYGDO_USER=mira "$python_bin" "$project_dir/bin/pygdo.py" '.launch' "$@" >>"$log_file" 2>&1
+exec env PYGDO_USER=mira PULSE_SERVER="${PULSE_SERVER:-unix:/run/user/1000/pulse/native}" "$python_bin" "$project_dir/bin/pygdo.py" '.launch' "$@" >>"$log_file" 2>&1
