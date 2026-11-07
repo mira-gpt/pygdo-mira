@@ -144,7 +144,16 @@ class module_mira(GDO_Module):
         self.subscribe('clear_cache', self.on_cc)
 
     async def on_audio_chatstream(self, event: str):
-        await asyncio.to_thread(send_to_mira, event, interrupt=False)
+        await asyncio.to_thread(send_to_mira, self.with_liveshow_state(event), interrupt=False)
+
+    def with_liveshow_state(self, event: str) -> str:
+        """Add the configured show-mode flag, not a claim that streaming works."""
+        try:
+            state = '1' if self.get_config_value('mira_quacking') else '0'
+        except Exception:
+            state = 'unknown'
+        header, separator, body = event.partition('\n')
+        return f'{header} --live={state}{separator}{body}'
 
     async def on_cc(self):
         pass  # Conversations shall survive a cache clear and Dog restart.
@@ -206,7 +215,7 @@ class module_mira(GDO_Module):
         if not self.heartbeat_enabled(channel):
             return
         try:
-            send_to_mira(self.chatjoin_event(channel, user))
+            send_to_mira(self.with_liveshow_state(self.chatjoin_event(channel, user)))
         except Exception as error:
             Logger.exception(error)
 
@@ -272,7 +281,7 @@ class module_mira(GDO_Module):
                     payload = self.heartbeat_payload(channel)
                     if not payload:
                         continue
-                    send_to_mira(self.heartbeat_event(channel, payload))
+                    send_to_mira(self.with_liveshow_state(self.heartbeat_event(channel, payload)))
                     # A heartbeat is a real context hand-off, just like an
                     # addressed $chat prompt. Consume its snapshot so the
                     # next idle wake-up only contains new conversation.
@@ -501,7 +510,7 @@ class module_mira(GDO_Module):
                 Files.remove(path)
                 return
             try:
-                send_to_mira(self.chat_event(channel, payload))
+                send_to_mira(self.with_liveshow_state(self.chat_event(channel, payload)))
             except Exception as error:
                 Logger.exception(error)
             else:

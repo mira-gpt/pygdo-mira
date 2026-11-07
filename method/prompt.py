@@ -38,5 +38,7 @@ class prompt(Method):
         text = self.param_value('prompt')
         author = getattr(self, '_env_reply_to', None) or self._env_user
         event = f"$chat\n{Time.get_date()} {location} {self.prompt_author(author)} {text}\n$chat_done"
+        from gdo.mira.module_mira import module_mira
+        event = module_mira.instance().with_liveshow_state(event)
         send_to_mira(event)
         return self.empty()

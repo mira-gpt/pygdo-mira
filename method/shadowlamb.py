@@ -120,7 +120,8 @@ class shadowlamb(Method):
             offset, replies = cls.read_new_replies(path, offset, method.cfg_nickname())
             cls.OFFSETS[key] = offset
             if replies:
-                send_to_mira(cls.chat_event(server, replies))
+                from gdo.mira.module_mira import module_mira
+                send_to_mira(module_mira.instance().with_liveshow_state(cls.chat_event(server, replies)))
 
     async def gdo_execute(self) -> GDT:
         if not (server := GDO_Server.table().get_by_vals({'serv_name': self.cfg_server()})):

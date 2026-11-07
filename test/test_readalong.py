@@ -24,7 +24,7 @@ class ReadAlongTest(unittest.IsolatedAsyncioTestCase):
                 self.assertIsNotNone(field.to_value(code))
             self.assertIsNone(field.to_value('fr'))
             field.gdo_query()
-        table.select.return_value.where.assert_called_with("lang_iso IN ('en', 'de', 'ko', 'vi', 'ja', 'sq')")
+        table.select.return_value.where.assert_called_with("lang_iso IN ('en', 'de', 'ko', 'vi', 'ja', 'sq', 'ru', 'ar')")
 
     def test_parts_are_bounded_and_preserve_text(self):
         text = 'Hallo zusammen! ' * 70
@@ -102,7 +102,7 @@ class ReadAlongTest(unittest.IsolatedAsyncioTestCase):
         speech.input.return_value = speech
         async def speak():
             calls.append('speech')
-        speech.gdo_execute = AsyncMock(side_effect=speak)
+        speech.play = AsyncMock(side_effect=speak)
         async def translate(text, **kwargs):
             calls.append('translate')
             return await translator(text, **kwargs)

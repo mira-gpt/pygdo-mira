@@ -26,7 +26,8 @@ def detect_voice(text, fallback):
 
 
 def start(coroutine):
-    task = asyncio.create_task(coroutine)
+    from gdo.audio.PlaybackTasks import PlaybackTasks
+    task = PlaybackTasks.start(coroutine)
     tasks.add(task)
     task.add_done_callback(tasks.discard)
     return task
@@ -97,4 +98,4 @@ async def play(parts, target, voice):
             if target:
                 part = (await GTranslate.translate(part, target=target, api_key=key)).text
             for spoken in split_text(part, 300):
-                await ipc_say().input('text', spoken).input('lang', voice).gdo_execute()
+                await ipc_say().input('text', spoken).input('lang', voice).play()
