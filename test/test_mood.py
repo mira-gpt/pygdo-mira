@@ -19,7 +19,7 @@ class MoodTest(unittest.IsolatedAsyncioTestCase):
         field = next(g for g in module_mira().gdo_module_config() if g.get_name() == 'mira_mood')
         self.assertIsInstance(field, GDT_MiraMood)
         self.assertEqual('idle', field.get_initial())
-        self.assertEqual({'idle', 'quacking', 'sad', 'high', 'music', 'tipsy', 'drunk', 'embarrassed'}, set(field.init_choices()))
+        self.assertEqual({'idle', 'quacking', 'sad', 'high', 'music', 'tipsy', 'drunk', 'embarrassed', 'angry'}, set(field.init_choices()))
         self.assertTrue(field.has_tooltip())
 
     def test_command_queues_change(self):

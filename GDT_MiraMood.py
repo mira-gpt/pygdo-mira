@@ -6,4 +6,4 @@ class GDT_MiraMood(GDT_Enum):
 
     def __init__(self, name='mira_mood'):
         super().__init__(name)
-        self.choices({'idle': 'Idle', 'quacking': 'Quacking', 'sad': 'Sad', 'high': 'High', 'music': 'Music', 'tipsy': 'Tipsy', 'drunk': 'Drunk', 'embarrassed': 'Embarrassed'})
+        self.choices({'idle': 'Idle', 'quacking': 'Quacking', 'sad': 'Sad', 'high': 'High', 'music': 'Music', 'tipsy': 'Tipsy', 'drunk': 'Drunk', 'embarrassed': 'Embarrassed', 'angry': 'Angry'})
