@@ -20,6 +20,7 @@ from gdo.date.GDT_Duration import GDT_Duration
 from gdo.date.Time import Time
 from gdo.mira.util import send_to_mira
 from gdo.mira.GDT_MiraMood import GDT_MiraMood
+from gdo.mira.GDT_MiraLiveMode import GDT_MiraLiveMode
 
 from typing import TYPE_CHECKING
 
@@ -70,7 +71,9 @@ class module_mira(GDO_Module):
             GDT_String('agent_name').ascii().minlen(1).maxlen(32).not_null().initial('mira'),
             GDT_String('mira_triggered_by').maxlen(192).not_null().initial('mira,allagents').tooltip('tt_mira_triggered_by'),
             GDT_MiraMood('mira_mood').not_null().initial('idle').tooltip('tt_mira_mood'),
-            GDT_Bool('mira_quacking').not_null().initial('0').tooltip('tt_mira_quacking'),
+            GDT_MiraLiveMode().tooltip('tt_mira_livemode'),
+            # Read existing installations until an explicit new mode is saved.
+            GDT_Bool('mira_quacking').initial('0').hidden(),
             GDT_Duration('heartbeat_delay').not_null().units(4, True).initial_value(1337.420320),
             GDT_Bool('goalbeat_enabled').not_null().initial('0'),
             GDT_Duration('goalbeat_delay').not_null().min(Time.ONE_MINUTE).initial('30m'),
@@ -80,6 +83,12 @@ class module_mira(GDO_Module):
 
     def cfg_agent_name(self) -> str:
         return self.get_config_value('agent_name')
+
+    def cfg_mira_livemode(self) -> str:
+        mode = self.get_config_val('mira_livemode')
+        if mode in GDT_MiraLiveMode.MODES:
+            return mode
+        return 'show' if self.get_config_value('mira_quacking') else 'off'
 
     def cfg_mira_mood(self) -> str:
         mood = self.get_config_val('mira_mood')
@@ -149,7 +158,7 @@ class module_mira(GDO_Module):
     def with_liveshow_state(self, event: str) -> str:
         """Add the configured show-mode flag, not a claim that streaming works."""
         try:
-            state = '1' if self.get_config_value('mira_quacking') else '0'
+            state = self.cfg_mira_livemode()
         except Exception:
             state = 'unknown'
         header, separator, body = event.partition('\n')
