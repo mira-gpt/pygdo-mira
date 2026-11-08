@@ -5,6 +5,13 @@ Project-facing Mira context and helpers for the PyGDO chatbot system.
 
 ## Methods
 
+`$mira.sup` asks Mira for a short spoken update with a duck animation. It
+queues a `$chatsup --live=<mode> --user=<id> --lang=<iso>` event for the
+agent without interrupting ongoing work. The language is the user's setting,
+falling back to the channel language or English. Authentication is required.
+Queue acceptance does not prove that the agent responded or that audio and
+animation played; the active audio/video output must already be available.
+
 `$mira.readalong [--lang=de|en] <url>` fetches a direct HTTP(S) UTF-8 plain
 text URL and reads successive sections via
 Audio, whose speech events drive the duck and caption when Video is active.
