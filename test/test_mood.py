@@ -9,6 +9,7 @@ from gdo.mira.method.mood import mood
 from gdo.mira.module_mira import module_mira
 from gdo.video.module_video import module_video
 from gdo.video.method.ipc_duck3d import ipc_duck3d
+from gdo.video.DuckAnimations import BASE_DEFAULTS
 
 
 class MoodTest(unittest.IsolatedAsyncioTestCase):
@@ -19,8 +20,9 @@ class MoodTest(unittest.IsolatedAsyncioTestCase):
         field = next(g for g in module_mira().gdo_module_config() if g.get_name() == 'mira_mood')
         self.assertIsInstance(field, GDT_MiraMood)
         self.assertEqual('idle', field.get_initial())
-        self.assertEqual({'idle', 'quacking', 'sad', 'high', 'music', 'tipsy', 'drunk', 'embarrassed', 'angry', 'inlove', 'trip', 'tired'}, set(field.init_choices()))
+        self.assertEqual(set(BASE_DEFAULTS), set(field.init_choices()))
         self.assertTrue(field.has_tooltip())
+        self.assertIn('bday', field.gdo_choices())
 
     def test_command_queues_change(self):
         method = mood()
