@@ -8,7 +8,7 @@ ANIMATIONS = {
                 'cry', 'ouch', 'hello', 'rolleye', 'barf', 'plz', 'teacher', 'xd',
                 'sorry', 'nerd', 'cast', 'zombie', 'giveup', 'rich', 'anon', 'king',
                 'turnaround', 'shiver', 'rambo', 'hippi', 'metal', 'ninja', 'news',
-                'pirate', 'ghost', 'work', 'bday', 'hah', 'cheers')
+                'pirate', 'ghost', 'work', 'bday', 'hah', 'cheers', 'goth')
 }
 
 
