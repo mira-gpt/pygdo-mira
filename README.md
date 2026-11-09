@@ -210,6 +210,11 @@ must describe one bounded, safe task and its next verifiable step.
 
 # Away screen
 
+`$mira.stop` requests that Mira-managed playback, readalong and Agent Ears
+(microphone transcription) stop and that
+presentation effects and the logo close. The duck and microphone overlays
+remain. This does not mute unrelated applications or stop the separate microphone meter.
+
 An owner can request `$mira.away Be right back!` to lightly dim the screen,
 show a fixed English heading at the top, and cycle the message in the center.
 The original appears immediately; Dog translates it once per language in the
