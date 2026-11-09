@@ -1,5 +1,8 @@
 module_mira = "Mira"
 mt_mira_sup = "What's up, Mira?"
+mt_mira_greet = "Greet someone"
+md_mira_greet = "Ask Mira to welcome someone and share a short update."
+mira_greet_queued = "Asked Mira to greet them."
 md_mira_sup = "Ask Mira for a short spoken update."
 mira_sup_queued = "Asked Mira for a spoken update."
 mt_mira_readalong = "Read along"

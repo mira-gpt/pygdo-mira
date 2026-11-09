@@ -5,6 +5,12 @@ Project-facing Mira context and helpers for the PyGDO chatbot system.
 
 ## Methods
 
+`$mira.greet <name> [--lang=de]` queues a non-interrupting `$chatgreet`
+event asking Mira to greet the named person and share a brief update. Language
+defaults to the channel language, or English if unavailable; `--lang` overrides
+it. The requester must be authenticated. Queue acceptance does not prove that
+speech, animation, or the greeting was delivered.
+
 `$mira.sup` asks Mira for a short spoken update with a duck animation. It
 queues a `$chatsup --live=<mode> --user=<id> --lang=<iso>` event for the
 agent without interrupting ongoing work. The language is the user's setting,
