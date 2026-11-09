@@ -27,6 +27,17 @@ class SongMetadataTest(unittest.TestCase):
 
 
 class SongMonitorTest(unittest.IsolatedAsyncioTestCase):
+    async def test_leaving_show_forgets_tracks_so_return_announces_current_song(self):
+        from gdo.base.Application import Application
+        from gdo.mira.module_mira import module_mira
+        module = module_mira()
+        module.current_song_monitor = CurrentSongMonitor()
+        module.current_song_monitor.player_tracks = {'player': ('artist', 'song')}
+        module.cfg_mira_livemode = MagicMock(return_value='discuss')
+        with patch.object(Application, 'IS_DOG', True):
+            await module.current_song_timer()
+        self.assertEqual({}, module.current_song_monitor.player_tracks)
+
     async def test_timer_only_runs_in_show_mode_and_when_enabled(self):
         from gdo.base.Application import Application
         from gdo.mira.module_mira import module_mira

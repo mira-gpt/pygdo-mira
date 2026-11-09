@@ -233,6 +233,8 @@ session selected by `audio_output_session_user` (or Dog's own session when
 unset). In `show` live mode, the enabled-by-default
 `mira_current_song_enabled` monitor checks for song changes and queues one
 `Now playing: artist - title` message on the microphone ticker. It keeps the
+current track eligible for announcement again after returning to `show` from
+another mode. The monitor does not automatically post in `discuss` mode. It keeps the
 previous playing player for `$np` when several are active, otherwise picks by MPRIS bus
 name. The ticker also reports track changes from other playing players, including
 Firefox while a radio player is playing. Only players exposing MPRIS playback metadata are supported; Firefox

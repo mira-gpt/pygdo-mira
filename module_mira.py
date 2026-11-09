@@ -161,7 +161,11 @@ class module_mira(GDO_Module):
         self.subscribe('clear_cache', self.on_cc)
 
     async def current_song_timer(self):
-        if not Application.IS_DOG or self.cfg_mira_livemode() != 'show':
+        if not Application.IS_DOG:
+            return
+        if self.cfg_mira_livemode() != 'show':
+            self.current_song_monitor.player_tracks.clear()
+            self.current_song_monitor.current = None
             return
         enabled = self.get_config_val('mira_current_song_enabled')
         if enabled in ('0', 0, False):
