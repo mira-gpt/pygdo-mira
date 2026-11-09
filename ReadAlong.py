@@ -65,19 +65,33 @@ def split_text(text, size=PART_SIZE):
     if len(text) > MAX_TEXT:
         raise ValueError(f'Text must have 1 to {MAX_TEXT} characters')
     # ASCII art and separators should not be spoken as long symbol sequences.
-    text = re.sub(r'([^\w\s]|_)\1{2,}', ' ', text)
+    text = re.sub(r'([^\w\s.!?。！？]|_)\1{2,}', ' ', text)
     text = ' '.join(text.split())
     if not text:
         raise ValueError(f'Text must have 1 to {MAX_TEXT} characters')
+    if size < 1:
+        raise ValueError('Part size must be positive')
+    abbreviations = {'dr.', 'prof.', 'mr.', 'mrs.', 'ms.', 'z.b.', 'd.h.', 'bzw.', 'usw.', 'etc.', 'u.a.'}
+    sentences, start = [], 0
+    for match in re.finditer(r'[.!?。！？]+["“”’»\)\]]*(?:\s+|$)', text):
+        candidate = text[start:match.end()].strip()
+        last = candidate.split()[-1].strip('"“”’»()[]').casefold()
+        if last in abbreviations:
+            continue
+        sentences.append(candidate)
+        start = match.end()
+    if text[start:].strip():
+        sentences.append(text[start:].strip())
     pieces = []
-    while len(text) > size:
-        cut = text.rfind(' ', 0, size + 1)
-        if cut < size // 3:
-            cut = size
-        pieces.append(text[:cut])
-        text = text[cut:].lstrip()
-    if text:
-        pieces.append(text)
+    for sentence in sentences:
+        while len(sentence) > size:
+            cut = sentence.rfind(' ', 0, size + 1)
+            if cut < size // 3:
+                cut = size
+            pieces.append(sentence[:cut])
+            sentence = sentence[cut:].lstrip()
+        if sentence:
+            pieces.append(sentence)
     return pieces
 
 

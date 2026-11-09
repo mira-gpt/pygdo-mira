@@ -34,10 +34,21 @@ class ReadAlongTest(unittest.IsolatedAsyncioTestCase):
 
     def test_repeated_special_characters_are_removed(self):
         self.assertEqual(split_text('Hallo === Welt --- ja!!! ok.. ___ ä ää 111'),
-                         ['Hallo Welt ja ok.. ä ää 111'])
+                         ['Hallo Welt ja!!!', 'ok..', 'ä ää 111'])
         self.assertEqual(split_text('links===rechts'), ['links rechts'])
         with self.assertRaises(ValueError):
             split_text('=====')
+
+    def test_sentence_boundaries_and_abbreviations(self):
+        self.assertEqual(split_text('Hallo! Wie geht es dir? Dr. Duck sagt z.B. ja. Ende.'),
+                         ['Hallo!', 'Wie geht es dir?', 'Dr. Duck sagt z.B. ja.', 'Ende.'])
+        self.assertEqual(split_text('„Hallo!“ Dann los。 Gut!'), ['„Hallo!“', 'Dann los。', 'Gut!'])
+
+    def test_long_sentence_is_still_bounded(self):
+        text = ('langeswort ' * 50).strip() + '.'
+        parts = split_text(text, 100)
+        self.assertTrue(all(len(part) <= 100 for part in parts))
+        self.assertEqual(' '.join(parts), text)
 
     async def test_owner_command_queues_all_parts(self):
         method = readalong()
