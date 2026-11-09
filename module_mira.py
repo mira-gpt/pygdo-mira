@@ -14,6 +14,7 @@ from gdo.base.Render import Mode
 from gdo.base.Util import Files, Strings
 from gdo.core.GDO_User import GDO_User
 from gdo.core.GDT_Bool import GDT_Bool
+from gdo.core.GDT_Decimal import GDT_Decimal
 from gdo.core.GDT_String import GDT_String
 from gdo.core.connector.Bash import Bash
 from gdo.date.GDT_Duration import GDT_Duration
@@ -34,6 +35,7 @@ CHAT_CONTEXT_MAX_BYTES = 7_770
 SHADOWLAMB_POLL_DELAY = 0.25
 HEALTH_DELAY = 30
 HEARTBEAT_CHECK_DELAY = 1
+CURRENT_SONG_CHECK_DELAY = 5
 # A WebSocket/Web mirror of an IRC line can arrive a few milliseconds after
 # the original line.  Keep it out of Mira's conversational context without
 # suppressing a deliberate repeated line on the same connector.
@@ -72,6 +74,8 @@ class module_mira(GDO_Module):
             GDT_String('mira_triggered_by').maxlen(192).not_null().initial('mira,allagents').tooltip('tt_mira_triggered_by'),
             GDT_MiraMood('mira_mood').not_null().initial('idle').tooltip('tt_mira_mood'),
             GDT_MiraLiveMode().tooltip('tt_mira_livemode'),
+            GDT_Decimal('mira_btx_creds_per_letter').digits(8, 2).precision(2).min(0).max(99999999).not_null().initial('1.00').tooltip('tt_mira_btx_creds_per_letter'),
+            GDT_Bool('mira_current_song_enabled').not_null().initial('1').tooltip('tt_mira_current_song_enabled'),
             # Read existing installations until an explicit new mode is saved.
             GDT_Bool('mira_quacking').initial('0').hidden(),
             GDT_Duration('heartbeat_delay').not_null().units(4, True).initial_value(1337.420320),
@@ -121,6 +125,8 @@ class module_mira(GDO_Module):
         return []
 
     def gdo_init(self):
+        from gdo.mira.CurrentSong import CurrentSongMonitor
+        self.current_song_monitor = CurrentSongMonitor()
         type(self).HEALTH_STATES = {}
         type(self).HEARTBEAT_ACTIVITY = {}
         type(self).HEARTBEAT_SENT = set()
@@ -146,11 +152,24 @@ class module_mira(GDO_Module):
         Application.EVENTS.add_timer_async(self.get_config_value('goalbeat_delay'), self.goalbeat_timer, Application.EVENTS.FOREVER)
         Application.EVENTS.add_timer_async(HEARTBEAT_CHECK_DELAY, self.heartbeat_timer, Application.EVENTS.FOREVER)
         Application.EVENTS.add_timer_async(SHADOWLAMB_POLL_DELAY, self.shadowlamb_timer, Application.EVENTS.FOREVER)
+        Application.EVENTS.add_timer_async(CURRENT_SONG_CHECK_DELAY, self.current_song_timer, Application.EVENTS.FOREVER)
         Application.EVENTS.subscribe_times('new_message', self.on_new_message, 2_238_239_328)
         Application.EVENTS.subscribe_times('msg_sent', self.on_sent_message, 2_238_239_328)
         Application.EVENTS.subscribe_times('user_joined_channel', self.on_user_joined_channel, 2_238_239_328)
         Application.EVENTS.subscribe_times('audio_chatstream', self.on_audio_chatstream, 2_238_239_328)
         self.subscribe('clear_cache', self.on_cc)
+
+    async def current_song_timer(self):
+        if not Application.IS_DOG or self.cfg_mira_livemode() != 'show':
+            return
+        enabled = self.get_config_val('mira_current_song_enabled')
+        if enabled in ('0', 0, False):
+            return
+        try:
+            await self.current_song_monitor.poll()
+        except (ImportError, OSError, KeyError, ValueError, RuntimeError, asyncio.TimeoutError):
+            # The desktop session or a player may be temporarily unavailable.
+            self.current_song_monitor.current = None
 
     async def on_audio_chatstream(self, event: str):
         await asyncio.to_thread(send_to_mira, self.with_liveshow_state(event), interrupt=False)

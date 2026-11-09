@@ -207,3 +207,20 @@ Mira's private TODO. It emits a work packet only for the first item marked
 `- [ready] ...`; with no ready item it is silent. This makes the scheduler an
 intentional work dispatcher rather than an activity reminder. A ready item
 must describe one bounded, safe task and its next verifiable step.
+
+# Current song and microphone ticker
+
+`$mira.current_song` (short trigger `$np`) reads currently playing MPRIS metadata from the desktop
+session selected by `audio_output_session_user` (or Dog's own session when
+unset). In `show` live mode, the enabled-by-default
+`mira_current_song_enabled` monitor checks for song changes and queues one
+`Now playing: artist - title` message on the microphone ticker. It keeps the
+previous playing player when several are active, otherwise picks by MPRIS bus
+name. Only players exposing MPRIS playback metadata are supported; Firefox
+YouTube metadata is subject to what Firefox exposes. The fallback for an
+unknown artist is `The real Various Artists`. Disable the setting to stop
+automatic ticker posts. No media contents or browser history are read.
+
+The ticker is a bounded, in-memory queue, shared with `$mira.btx` (short trigger `$btx`); it is lost
+on Dog restart. The overlay must be enabled to display entries. BTX checks the
+configured whole-credit price, but automatic debit is not yet implemented.
