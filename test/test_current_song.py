@@ -47,7 +47,8 @@ class SongMonitorTest(unittest.IsolatedAsyncioTestCase):
     async def test_only_playing_player_and_preferred_player(self):
         players = json.dumps([{'name': 'org.mpris.MediaPlayer2.firefox'}, {'name': 'org.mpris.MediaPlayer2.celluloid'}])
         playing = '\n'.join([json.dumps(field('Playing')), json.dumps(field({'xesam:title': field('Song')}))])
-        with patch('gdo.mira.CurrentSong.busctl', new_callable=AsyncMock, side_effect=[players, playing]) as bus:
+        paused = '\n'.join([json.dumps(field('Paused')), json.dumps(field({}))])
+        with patch('gdo.mira.CurrentSong.busctl', new_callable=AsyncMock, side_effect=[players, playing, paused]) as bus:
             self.assertEqual(('org.mpris.MediaPlayer2.firefox', UNKNOWN_ARTIST, 'Song'),
                              await read_playing('user', 'org.mpris.MediaPlayer2.firefox'))
         self.assertIn('org.mpris.MediaPlayer2.firefox', bus.await_args_list[1].args)
@@ -62,7 +63,7 @@ class SongMonitorTest(unittest.IsolatedAsyncioTestCase):
         monitor = CurrentSongMonitor()
         song = ('player', 'Artist', 'Song')
         with patch('gdo.mira.CurrentSong.desktop_user', return_value=None), \
-                patch('gdo.mira.CurrentSong.read_playing', new_callable=AsyncMock, return_value=song), \
+                patch('gdo.mira.CurrentSong.read_playing_all', new_callable=AsyncMock, return_value=[song]), \
                 patch('gdo.video.MicTicker.MicTicker.enqueue', side_effect=[ValueError('full'), None]) as enqueue:
             with self.assertRaises(ValueError):
                 await monitor.poll()
@@ -70,3 +71,17 @@ class SongMonitorTest(unittest.IsolatedAsyncioTestCase):
             await monitor.poll()
         self.assertEqual(2, enqueue.call_count)
         enqueue.assert_called_with('Now playing: Artist - Song')
+
+    async def test_firefox_track_is_queued_while_radio_keeps_playing(self):
+        monitor = CurrentSongMonitor()
+        radio = ('org.mpris.MediaPlayer2.celluloid', 'Station', 'Radio')
+        firefox = ('org.mpris.MediaPlayer2.firefox.instance1', 'Artist', 'YouTube song')
+        with patch('gdo.mira.CurrentSong.desktop_user', return_value=None), \
+                patch('gdo.mira.CurrentSong.read_playing_all', new_callable=AsyncMock,
+                      side_effect=[[radio], [radio, firefox], [radio, firefox]]), \
+                patch('gdo.video.MicTicker.MicTicker.enqueue') as enqueue:
+            await monitor.poll()
+            await monitor.poll()
+            await monitor.poll()
+        self.assertEqual(2, enqueue.call_count)
+        enqueue.assert_called_with('Now playing: Artist - YouTube song')

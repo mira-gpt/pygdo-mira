@@ -64,7 +64,7 @@ async def busctl(session_user, *args):
     return output.decode('utf-8')
 
 
-async def read_playing(session_user=None, preferred=None):
+async def read_playing_all(session_user=None, preferred=None):
     entries = json.loads(await busctl(session_user, 'list'))
     names = sorted({entry['name'] for entry in entries if isinstance(entry, dict)
                     and isinstance(entry.get('name'), str) and entry['name'].startswith(PREFIX)
@@ -72,6 +72,7 @@ async def read_playing(session_user=None, preferred=None):
     if preferred in names:
         names.remove(preferred)
         names.insert(0, preferred)
+    songs = []
     for name in names:
         try:
             output = await busctl(session_user, 'get-property', name, PATH, PLAYER, 'PlaybackStatus', 'Metadata')
@@ -80,10 +81,15 @@ async def read_playing(session_user=None, preferred=None):
                 continue
             song = song_from_metadata(rows[1].get('data', {}))
             if song:
-                return name, *song
+                songs.append((name, *song))
         except (OSError, ValueError, KeyError, TypeError, RuntimeError, asyncio.TimeoutError):
             continue
-    return None
+    return songs
+
+
+async def read_playing(session_user=None, preferred=None):
+    songs = await read_playing_all(session_user, preferred)
+    return songs[0] if songs else None
 
 
 def desktop_user():
@@ -99,6 +105,7 @@ class CurrentSongMonitor:
     def __init__(self):
         self.current = None
         self.last_queued = None
+        self.player_tracks = {}
         self.busy = False
 
     async def poll(self):
@@ -107,11 +114,15 @@ class CurrentSongMonitor:
         self.busy = True
         try:
             preferred = self.current[0] if self.current else None
-            self.current = await read_playing(desktop_user(), preferred)
-            if self.current and self.current[1:] != self.last_queued:
-                from gdo.video.MicTicker import MicTicker
-                artist, title = self.current[1:]
-                MicTicker.enqueue(f'Now playing: {artist} - {title}'[:300])
-                self.last_queued = (artist, title)
+            songs = await read_playing_all(desktop_user(), preferred)
+            self.current = songs[0] if songs else None
+            active = {song[0] for song in songs}
+            self.player_tracks = {name: track for name, track in self.player_tracks.items() if name in active}
+            for name, artist, title in songs:
+                if self.player_tracks.get(name) != (artist, title):
+                    from gdo.video.MicTicker import MicTicker
+                    MicTicker.enqueue(f'Now playing: {artist} - {title}'[:300])
+                    self.player_tracks[name] = (artist, title)
+                    self.last_queued = (artist, title)
         finally:
             self.busy = False
