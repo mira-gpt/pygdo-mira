@@ -76,6 +76,7 @@ class module_mira(GDO_Module):
             GDT_MiraLiveMode().tooltip('tt_mira_livemode'),
             GDT_Decimal('mira_btx_creds_per_letter').digits(8, 2).precision(2).min(0).max(99999999).not_null().initial('1.00').tooltip('tt_mira_btx_creds_per_letter'),
             GDT_Bool('mira_current_song_enabled').not_null().initial('1').tooltip('tt_mira_current_song_enabled'),
+            GDT_Duration('live_away_msg_cycle_time').not_null().min(.2).max(300).initial('1s 420ms').tooltip('tt_mira_live_away_msg_cycle_time'),
             # Read existing installations until an explicit new mode is saved.
             GDT_Bool('mira_quacking').initial('0').hidden(),
             GDT_Duration('heartbeat_delay').not_null().units(4, True).initial_value(1337.420320),

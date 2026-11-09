@@ -208,6 +208,24 @@ Mira's private TODO. It emits a work packet only for the first item marked
 intentional work dispatcher rather than an activity reminder. A ready item
 must describe one bounded, safe task and its next verifiable step.
 
+# Away screen
+
+An owner can request `$mira.away Be right back!` to lightly dim the screen,
+show a fixed English heading at the top, and cycle the message in the center.
+The original appears immediately; Dog translates it once per language in the
+microphone overlay's language list (English, German, Korean, Vietnamese,
+Japanese, Albanian, Russian and Arabic) using the configured Translate provider, then cycles the
+in-memory results. Translation failures leave the original and successful
+translations available. The message is sent to the external translation
+provider; do not use private information. `live_away_msg_cycle_time` controls
+how long each version is shown (default 1.42 seconds).
+
+Use `$mira.away off` to cancel translation and remove the screen, or
+`$video.close away` to close it. The video connector must be running; a queued
+request does not confirm the audience can see it. The screen is temporary and
+is not restored after a restart. Screen sharing dims the overlay window, not
+the actual monitor brightness; virtual-camera mode dims the composite.
+
 # Current song and microphone ticker
 
 `$mira.current_song` (short trigger `$np`) reads currently playing MPRIS metadata from the desktop
