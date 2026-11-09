@@ -26,6 +26,13 @@ class AudioChatStreamTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual('show', mira.cfg_mira_livemode())
         with patch.object(mira, 'get_config_val', return_value=None), patch.object(mira, 'get_config_value', return_value=False):
             self.assertEqual('off', mira.cfg_mira_livemode())
-        for mode in ('off', 'work', 'show', 'discuss'):
+        for mode in ('off', 'work', 'show', 'discuss', 'cohost'):
             with patch.object(mira, 'get_config_val', return_value=mode):
                 self.assertEqual(mode, mira.cfg_mira_livemode())
+
+    async def test_cohost_is_forwarded_to_agent(self):
+        event = '$chatstream 12 --lang=en --call=mic --seq=0 --status=final --user=42\nHello'
+        with patch('gdo.mira.module_mira.send_to_mira') as send, \
+                patch.object(module_mira, 'cfg_mira_livemode', return_value='cohost'):
+            await module_mira().on_audio_chatstream(event)
+        send.assert_called_once_with(event.replace('\n', ' --live=cohost\n', 1), interrupt=False)
