@@ -62,7 +62,14 @@ class MoodTest(unittest.IsolatedAsyncioTestCase):
         module.get_config_val = MagicMock(return_value='lol')
         self.assertEqual('idle', module.cfg_mira_mood())
 
-    def test_duck_enabling_applies_saved_base_mood(self):
+    def test_zzz_is_a_persistent_mood(self):
+        from gdo.mira.GDT_MiraMood import ANIMATIONS
+        module = module_mira()
+        module.get_config_val = MagicMock(return_value='zzz')
+        self.assertEqual('zzz', module.cfg_mira_mood())
+        self.assertTrue(ANIMATIONS['zzz']['base'])
+
+    async def test_duck_enabling_applies_saved_base_mood(self):
         method = ipc_duck3d()
         method.param_value = MagicMock(return_value=True)
         method.empty = MagicMock()
@@ -71,9 +78,11 @@ class MoodTest(unittest.IsolatedAsyncioTestCase):
         mira.cfg_mira_mood.return_value = 'quacking'
         loader = MagicMock()
         loader.get_module.return_value = mira
+        video = MagicMock(connector=connector)
+        video.save_config_val = AsyncMock()
         with patch.object(Application, 'IS_DOG', True), \
-                patch('gdo.video.method.ipc_duck3d.module_video.instance', return_value=MagicMock(connector=connector)), \
+                patch('gdo.video.method.ipc_duck3d.module_video.instance', return_value=video), \
                 patch('gdo.video.method.ipc_duck3d.ModuleLoader.instance', return_value=loader):
-            method.gdo_execute()
+            await method.gdo_execute()
         connector.duck3d.assert_called_once_with(True)
         connector.duck_animation.assert_called_once_with('quacking')
