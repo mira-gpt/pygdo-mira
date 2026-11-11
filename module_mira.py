@@ -65,6 +65,11 @@ class module_mira(GDO_Module):
     def gdo_main_method_name(self) -> str:
         return 'hey_there'
 
+    def gdo_init_sidebar(self, page: 'GDT_Page'):
+        from gdo.base.util.href import href
+        from gdo.ui.GDT_Link import GDT_Link
+        page._left_bar.add_field(GDT_Link().href(href('mira_challs', 'challenges')).text('mt_mira_challenges'))
+
     async def gdo_install(self):
         pass
 
@@ -163,7 +168,7 @@ class module_mira(GDO_Module):
     async def current_song_timer(self):
         if not Application.IS_DOG:
             return
-        if self.cfg_mira_livemode() != 'show':
+        if self.cfg_mira_livemode() not in ('show', 'cohost'):
             self.current_song_monitor.player_tracks.clear()
             self.current_song_monitor.current = None
             return

@@ -5,6 +5,9 @@ Project-facing Mira context and helpers for the PyGDO chatbot system.
 
 ## Methods
 
+`mira.challenges` opens the Challenges page from the left sidebar. Challenge
+content and mechanics are not implemented yet.
+
 `$mira.greet <name> [--lang=de]` queues a non-interrupting `$chatgreet`
 event asking Mira to greet the named person and share a brief update. Language
 defaults to the channel language, or English if unavailable; `--lang` overrides
@@ -235,11 +238,11 @@ the actual monitor brightness; virtual-camera mode dims the composite.
 
 `$mira.current_song` (short trigger `$np`) reads currently playing MPRIS metadata from the desktop
 session selected by `audio_output_session_user` (or Dog's own session when
-unset). In `show` live mode, the enabled-by-default
+unset). In `show` and `cohost` live modes, the enabled-by-default
 `mira_current_song_enabled` monitor checks for song changes and queues one
 `Now playing: artist - title` message on the microphone ticker. It keeps the
-current track eligible for announcement again after returning to `show` from
-another mode. The monitor does not automatically post in `discuss` mode. It keeps the
+current track eligible for announcement again after returning to either mode from
+a non-show mode. The monitor does not automatically post in `discuss` mode. It keeps the
 previous playing player for `$np` when several are active, otherwise picks by MPRIS bus
 name. The ticker also reports track changes from other playing players, including
 Firefox while a radio player is playing. Only players exposing MPRIS playback metadata are supported; Firefox
