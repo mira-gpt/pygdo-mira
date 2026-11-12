@@ -68,6 +68,7 @@ class MoodTest(unittest.IsolatedAsyncioTestCase):
         module.get_config_val = MagicMock(return_value='zzz')
         self.assertEqual('zzz', module.cfg_mira_mood())
         self.assertTrue(ANIMATIONS['zzz']['base'])
+        self.assertTrue(ANIMATIONS['coffee']['base'])
 
     async def test_duck_enabling_applies_saved_base_mood(self):
         method = ipc_duck3d()
