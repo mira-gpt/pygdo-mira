@@ -102,7 +102,7 @@ class module_mira(GDO_Module):
 
     def cfg_mira_mood(self) -> str:
         mood = self.get_config_val('mira_mood')
-        return mood if mood in ('idle', 'quacking', 'sad', 'high', 'music', 'tipsy', 'drunk', 'embarrassed', 'angry', 'inlove', 'trip', 'tired', 'zzz', 'coffee') else 'idle'
+        return mood if mood in ('idle', 'quacking', 'sad', 'high', 'music', 'tipsy', 'drunk', 'embarrassed', 'angry', 'inlove', 'trip', 'tired', 'zzz', 'coffee', 'shower') else 'idle'
 
     @staticmethod
     def address_pattern(agent_name: str) -> re.Pattern:
