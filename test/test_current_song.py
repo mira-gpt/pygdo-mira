@@ -27,6 +27,20 @@ class SongMetadataTest(unittest.TestCase):
 
 
 class SongMonitorTest(unittest.IsolatedAsyncioTestCase):
+    async def test_song_change_emits_only_once(self):
+        from gdo.base.Application import Application
+        events = MagicMock()
+        events.publish = AsyncMock()
+        monitor = CurrentSongMonitor()
+        with patch.object(Application, 'EVENTS', events, create=True), \
+                patch('gdo.mira.CurrentSong.desktop_user', return_value=None), \
+                patch('gdo.mira.CurrentSong.read_playing_all', new_callable=AsyncMock,
+                      return_value=[('player', 'Artist', 'Song')]), \
+                patch('gdo.video.MicTicker.MicTicker.enqueue'):
+            await monitor.poll()
+            await monitor.poll()
+        events.publish.assert_awaited_once_with('mira_current_song_changed', 'Artist', 'Song')
+
     async def test_cohost_monitors_song_changes(self):
         from gdo.base.Application import Application
         from gdo.mira.module_mira import module_mira

@@ -124,5 +124,9 @@ class CurrentSongMonitor:
                     MicTicker.enqueue(f'Now playing: {artist} - {title}'[:300])
                     self.player_tracks[name] = (artist, title)
                     self.last_queued = (artist, title)
+                    from gdo.base.Application import Application
+                    events = getattr(Application, 'EVENTS', None)
+                    if events:
+                        await events.publish('mira_current_song_changed', artist, title)
         finally:
             self.busy = False
