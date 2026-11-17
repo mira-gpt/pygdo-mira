@@ -18,6 +18,7 @@ class ChallengesTest(unittest.IsolatedAsyncioTestCase):
             module.gdo_init_sidebar(page)
         href.assert_called_once_with('mira_challs', 'challenges')
         page._left_bar.add_field.assert_called_once()
+        self.assertEqual('trophy', page._left_bar.add_field.call_args.args[0]._icon_name)
         self.assertEqual('web', challenges().gdo_connectors())
 
     async def test_page_has_empty_state(self):
