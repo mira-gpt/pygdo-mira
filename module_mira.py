@@ -60,6 +60,9 @@ class module_mira(GDO_Module):
     def gdo_dependencies(self) -> list:
         return [
             'chat',
+            'audio',
+            'video',
+            'translate',
         ]
 
     def gdo_main_method_name(self) -> str:
