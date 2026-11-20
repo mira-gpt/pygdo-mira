@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import os
 import pwd
+import re
 import subprocess
 import time
 import uuid
 
 
-DEFAULT_MIRA_TMUX_TARGET = 'mira-codex:0.0'
 DEFAULT_MIRA_TMUX_USER = 'mira'
 MIRA_TMUX_HELPER = '/usr/local/bin/mira-tmux'
 
@@ -38,6 +38,17 @@ def tmux_command() -> list[str]:
     return ['sudo', '-n', '-u', user, 'tmux']
 
 
+def tmux_target() -> str:
+    """Use the configured agent's session unless explicitly overridden."""
+    if target := os.environ.get('MIRA_TMUX_TARGET'):
+        return target
+    from gdo.mira.module_mira import module_mira
+    name = module_mira.instance().cfg_agent_name()
+    if not isinstance(name, str) or not re.fullmatch(r'[A-Za-z0-9_-]+', name):
+        raise ValueError('agent_name must contain only letters, digits, underscores or hyphens for the tmux target')
+    return f'{name}-codex:0.0'
+
+
 def send_to_mira(text: str, *, submit: bool = True, target: str | None = None, interrupt: bool = True) -> None:
     """Send literal text to the configured agent's visible tmux terminal.
 
@@ -51,24 +62,24 @@ def send_to_mira(text: str, *, submit: bool = True, target: str | None = None, i
     if '\0' in text:
         raise ValueError('Mira tmux text must not contain NUL bytes')
 
-    tmux_target = target or os.environ.get('MIRA_TMUX_TARGET', DEFAULT_MIRA_TMUX_TARGET)
+    destination = target or tmux_target()
     if submit and interrupt:
         # Avoid an empty Ctrl-C, which exits Mira's terminal. The harmless text
         # makes Ctrl-C cancel the current prompt instead.
-        subprocess.run(tmux_command() + ['send-keys', '-t', tmux_target, '-l', '--', 'quack'], check=True)
+        subprocess.run(tmux_command() + ['send-keys', '-t', destination, '-l', '--', 'quack'], check=True)
         time.sleep(0.1)
-        subprocess.run(tmux_command() + ['send-keys', '-t', tmux_target, 'C-c'], check=True)
+        subprocess.run(tmux_command() + ['send-keys', '-t', destination, 'C-c'], check=True)
         time.sleep(0.1)
 
     payload = text + ('  ' if submit else '')
     buffer_name = f'mira-delivery-{uuid.uuid4().hex}'
     subprocess.run(tmux_command() + ['load-buffer', '-b', buffer_name, '-'], input=payload, text=True, check=True)
     try:
-        subprocess.run(tmux_command() + ['paste-buffer', '-t', tmux_target, '-b', buffer_name, '-p'], check=True)
+        subprocess.run(tmux_command() + ['paste-buffer', '-t', destination, '-b', buffer_name, '-p'], check=True)
     finally:
         subprocess.run(tmux_command() + ['delete-buffer', '-b', buffer_name], check=False)
 
     if submit:
-        subprocess.run(tmux_command() + ['send-keys', '-t', tmux_target, 'Enter'], check=True)
+        subprocess.run(tmux_command() + ['send-keys', '-t', destination, 'Enter'], check=True)
         time.sleep(0.1)
-        subprocess.run(tmux_command() + ['send-keys', '-t', tmux_target, 'Enter'], check=True)
+        subprocess.run(tmux_command() + ['send-keys', '-t', destination, 'Enter'], check=True)

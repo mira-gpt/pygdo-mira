@@ -49,6 +49,7 @@ class GoalbeatTest(unittest.IsolatedAsyncioTestCase):
         mira = module_mira()
         with patch.object(mira, 'get_config_value', return_value=True), \
              patch.object(mira, 'get_config_val', return_value='Test message'), \
+             patch('gdo.mira.util.tmux_target', return_value='test:0.0'), \
              patch('gdo.mira.util.subprocess.run') as run, \
              patch('gdo.mira.util.time.sleep'):
             await mira.goalbeat_timer()

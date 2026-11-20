@@ -174,8 +174,9 @@ The `scripts/` directory contains Mira's local mail-chain helpers:
   and invokes the safe trigger. Override `MIRA_MAIL_QUEUE`, `MIRA_EVENT_QUEUE`,
   `MIRA_PYGDO_ROOT`, and related variables when deploying on another host.
 
-The trigger needs `tmux`, with the MIRA Codex process running in the named
-`mira-codex` session. Override the pane with `MIRA_TMUX_TARGET` only when a
+The trigger needs `tmux`, with the agent process running in the named
+`<agent_name>-codex` session, window 0, pane 0 (for Mira: `mira-codex:0.0`).
+Override the pane with `MIRA_TMUX_TARGET` only when a
 different, explicitly created agent session is intended. The OS account is
 independent from the agent name: set `MIRA_TMUX_USER` to the account that owns
 the tmux socket. For example, Simion running as `shippi` in window `MIRA` uses:
@@ -184,6 +185,12 @@ the tmux socket. For example, Simion running as `shippi` in window `MIRA` uses:
 export MIRA_TMUX_USER=shippi
 export MIRA_TMUX_TARGET=simion-codex:MIRA
 ```
+
+For Claude Code, set the optional Mira module config `agent_session_id` to a
+specific conversation ID. In the agent's existing tmux pane and original
+project directory, run `gdo/mira/scripts/start_claude.sh` (use an absolute
+path when outside the PyGDO checkout). With no ID it opens Claude's interactive
+resume picker. The launcher does not create tmux sessions or start Dog.
 
 If the Dog runs under another OS account, set `MIRA_TMUX_HELPER` to a narrowly
 scoped helper for that agent's tmux socket; otherwise the standard `tmux`
