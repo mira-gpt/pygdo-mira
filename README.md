@@ -175,7 +175,8 @@ The `scripts/` directory contains Mira's local mail-chain helpers:
   `MIRA_PYGDO_ROOT`, and related variables when deploying on another host.
 
 The trigger needs `tmux`, with the agent process running in the named
-`<agent_name>-codex` session, window 0, pane 0 (for Mira: `mira-codex:0.0`).
+`<agent_name>-codex` session and `<agent_name>` window (Mira retains the
+existing `mira-codex:0.0` target).
 Override the pane with `MIRA_TMUX_TARGET` only when a
 different, explicitly created agent session is intended. The OS account is
 independent from the agent name: set `MIRA_TMUX_USER` to the account that owns
@@ -187,10 +188,11 @@ export MIRA_TMUX_TARGET=simion-codex:MIRA
 ```
 
 For Claude Code, set the optional Mira module config `agent_session_id` to a
-specific conversation ID. In the agent's existing tmux pane and original
-project directory, run `gdo/mira/scripts/start_claude.sh` (use an absolute
-path when outside the PyGDO checkout). With no ID it opens Claude's interactive
-resume picker. The launcher does not create tmux sessions or start Dog.
+specific conversation ID. From the original project directory, run
+`gdo/mira/scripts/start_claude.sh` (use an absolute path when outside the
+PyGDO checkout). It creates an agent-named tmux window if the session is absent,
+otherwise attaches to the existing session. With no ID it opens Claude's
+interactive resume picker. It does not start Dog.
 Set module config `agent_ctrlc` to `0` for agents such as Claude Code that
 should not receive Ctrl+C before a message; the default `1` preserves Codex's
 existing behavior. With `0`, messages are pasted without clearing or cancelling

@@ -38,15 +38,20 @@ def tmux_command() -> list[str]:
     return ['sudo', '-n', '-u', user, 'tmux']
 
 
+def validate_agent_name(name: str) -> str:
+    if not isinstance(name, str) or not re.fullmatch(r'[A-Za-z0-9_-]+', name):
+        raise ValueError('agent_name must contain only letters, digits, underscores or hyphens for the tmux target')
+    return name
+
+
 def tmux_target() -> str:
-    """Use the configured agent's session unless explicitly overridden."""
+    """Use the configured agent's named window unless explicitly overridden."""
     if target := os.environ.get('MIRA_TMUX_TARGET'):
         return target
     from gdo.mira.module_mira import module_mira
-    name = module_mira.instance().cfg_agent_name()
-    if not isinstance(name, str) or not re.fullmatch(r'[A-Za-z0-9_-]+', name):
-        raise ValueError('agent_name must contain only letters, digits, underscores or hyphens for the tmux target')
-    return f'{name}-codex:0.0'
+    name = validate_agent_name(module_mira.instance().cfg_agent_name())
+    # Preserve the established live Mira target; new agents use named windows.
+    return 'mira-codex:0.0' if name == 'mira' else f'{name}-codex:{name}'
 
 
 def send_to_mira(text: str, *, submit: bool = True, target: str | None = None, interrupt: bool = True) -> None:

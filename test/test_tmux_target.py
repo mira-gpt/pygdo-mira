@@ -11,7 +11,7 @@ class TmuxTargetTest(unittest.TestCase):
              patch('gdo.mira.module_mira.module_mira.instance') as instance:
             for name in ('mira', 'khedr', 'simion'):
                 instance.return_value.cfg_agent_name.return_value = name
-                self.assertEqual(f'{name}-codex:0.0', tmux_target())
+                self.assertEqual('mira-codex:0.0' if name == 'mira' else f'{name}-codex:{name}', tmux_target())
 
     def test_explicit_target_takes_priority(self):
         with patch.dict(os.environ, {'MIRA_TMUX_TARGET': 'custom:window.1'}, clear=True), \
