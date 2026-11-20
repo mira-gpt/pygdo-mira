@@ -160,7 +160,9 @@ class module_mira_Test(GDOTestCase):
             self.assertNotIn('<strong>', text)
 
     def test_04_send_to_mira_cancels_prompt_before_pasting(self):
-        with patch('gdo.mira.util.subprocess.run') as run, patch('gdo.mira.util.time.sleep'):
+        with patch('gdo.mira.util.subprocess.run') as run, patch('gdo.mira.util.time.sleep'), \
+             patch('gdo.mira.module_mira.module_mira.instance') as instance:
+            instance.return_value.get_config_value.return_value = True
             send_to_mira('$changes gdo/mira/util.py', target='test:0.0')
         calls = [call.args[0] for call in run.call_args_list]
         self.assertEqual(['tmux', 'send-keys', '-t', 'test:0.0', '-l', '--', 'quack'], calls[0])

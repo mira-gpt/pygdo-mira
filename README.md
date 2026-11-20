@@ -191,6 +191,10 @@ specific conversation ID. In the agent's existing tmux pane and original
 project directory, run `gdo/mira/scripts/start_claude.sh` (use an absolute
 path when outside the PyGDO checkout). With no ID it opens Claude's interactive
 resume picker. The launcher does not create tmux sessions or start Dog.
+Set module config `agent_ctrlc` to `0` for agents such as Claude Code that
+should not receive Ctrl+C before a message; the default `1` preserves Codex's
+existing behavior. With `0`, messages are pasted without clearing or cancelling
+whatever is already in the input pane.
 
 If the Dog runs under another OS account, set `MIRA_TMUX_HELPER` to a narrowly
 scoped helper for that agent's tmux socket; otherwise the standard `tmux`

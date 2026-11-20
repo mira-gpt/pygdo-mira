@@ -55,7 +55,8 @@ def send_to_mira(text: str, *, submit: bool = True, target: str | None = None, i
     ``submit`` uses the Codex editor's reliable submission sequence: two
     trailing spaces followed by two physical Return key events. Set it to
     ``False`` when a caller only wants to prefill the editor. Set ``interrupt``
-    to ``False`` to submit a follow-up without sending another Ctrl+C.
+    to ``False`` to submit a follow-up without sending another Ctrl+C. The
+    agent_ctrlc module setting can disable Ctrl+C for all deliveries.
     """
     if not isinstance(text, str) or not text:
         raise ValueError('Mira tmux text must be a non-empty string')
@@ -63,6 +64,9 @@ def send_to_mira(text: str, *, submit: bool = True, target: str | None = None, i
         raise ValueError('Mira tmux text must not contain NUL bytes')
 
     destination = target or tmux_target()
+    if submit and interrupt:
+        from gdo.mira.module_mira import module_mira
+        interrupt = bool(module_mira.instance().get_config_value('agent_ctrlc'))
     if submit and interrupt:
         # Avoid an empty Ctrl-C, which exits Mira's terminal. The harmless text
         # makes Ctrl-C cancel the current prompt instead.

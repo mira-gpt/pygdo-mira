@@ -61,3 +61,4 @@ tt_mira_current_song_enabled = "Announce desktop MPRIS track changes on the micr
 mira_current_song_none = "No playing song metadata found."
 mira_current_song_unavailable = "The desktop media session is unavailable."
 mira_current_song_playing = "Now playing: %s - %s"
+agent_ctrlc = "Send Ctrl+C before agent messages"
