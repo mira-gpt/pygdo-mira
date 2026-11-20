@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import os
+import json
+import math
 import pwd
 import re
+import stat
 import subprocess
 import time
 import uuid
@@ -54,7 +57,63 @@ def tmux_target() -> str:
     return 'mira-codex:0.0' if name == 'mira' else f'{name}-codex:{name}'
 
 
-def send_to_mira(text: str, *, submit: bool = True, target: str | None = None, interrupt: bool = True) -> None:
+def read_agent_state(path: str) -> bool | None:
+    """Read a recent agent-owned Claude state file, or return unknown."""
+    try:
+        from gdo.mira.module_mira import module_mira
+        module = module_mira.instance()
+        agent = module.cfg_agent_name()
+        session = module.get_config_val('agent_session_id')
+        if not agent or not session:
+            return None
+        flags = os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0) | os.O_NONBLOCK
+        fd = os.open(path, flags)
+        with os.fdopen(fd, 'rb') as stream:
+            info = os.fstat(stream.fileno())
+            if (not stat.S_ISREG(info.st_mode) or info.st_uid != pwd.getpwnam(tmux_user()).pw_uid
+                    or info.st_mode & 0o022 or info.st_size > 4096):
+                return None
+            data = json.loads(stream.read(4097))
+        if data.get('agent') != agent or data.get('session_id') != session:
+            return None
+        updated = data.get('updated')
+        if (isinstance(updated, bool) or not isinstance(updated, (int, float))
+                or not math.isfinite(updated) or not 0 <= time.time() - updated <= 600):
+            return None
+        return {'busy': True, 'idle': False}.get(data.get('state'))
+    except Exception:
+        return None
+
+
+def current_agent_busy() -> bool | None:
+    """Use the ticker's configured Codex log when it has recent activity."""
+    try:
+        if path := os.environ.get('MIRA_AGENT_STATE_FILE'):
+            return read_agent_state(path)
+        from gdo.video.CodexActivity import CodexActivity
+        from gdo.video.module_video import module_video
+        path = module_video.instance().get_config_val('video_commentary_log')
+        if not path or time.time() - os.stat(path).st_mtime > 300:
+            return None
+        state = CodexActivity.poll(path)
+        return {'active': True, 'idle': False}.get(state)
+    except Exception:
+        # A status hint must never prevent delivery of the event itself.
+        return None
+
+
+def with_busy_hint(text: str, busy: bool | None) -> str:
+    """Add a verified busy hint to an event header; unknown leaves it absent."""
+    if busy is None:
+        return text
+    if not isinstance(busy, bool):
+        raise ValueError('busy must be True, False, or None')
+    return re.sub(r'(?m)^(\$(?!chat_done\b)[a-z][a-z0-9_-]*)(?=\s|$)',
+                  lambda match: f'{match.group(1)} --you-busy={int(busy)}', text, count=1)
+
+
+def send_to_mira(text: str, *, submit: bool = True, target: str | None = None, interrupt: bool = True,
+                 busy: bool | None = None) -> None:
     """Send literal text to the configured agent's visible tmux terminal.
 
     ``submit`` uses the Codex editor's reliable submission sequence: two
@@ -67,6 +126,8 @@ def send_to_mira(text: str, *, submit: bool = True, target: str | None = None, i
         raise ValueError('Mira tmux text must be a non-empty string')
     if '\0' in text:
         raise ValueError('Mira tmux text must not contain NUL bytes')
+
+    text = with_busy_hint(text, current_agent_busy() if busy is None else busy)
 
     destination = target or tmux_target()
     if submit and interrupt:
