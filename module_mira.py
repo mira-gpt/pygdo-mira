@@ -16,6 +16,7 @@ from gdo.core.GDO_User import GDO_User
 from gdo.core.GDT_Bool import GDT_Bool
 from gdo.core.GDT_Decimal import GDT_Decimal
 from gdo.core.GDT_String import GDT_String
+from gdo.core.GDT_Text import GDT_Text
 from gdo.core.connector.Bash import Bash
 from gdo.date.GDT_Duration import GDT_Duration
 from gdo.date.Time import Time
@@ -81,6 +82,7 @@ class module_mira(GDO_Module):
         return [
             GDT_String('agent_name').ascii().minlen(1).maxlen(32).not_null().initial('mira'),
             GDT_String('agent_session_id').ascii().maxlen(128),
+            GDT_Text('agent_skill_tags'),
             GDT_Bool('agent_ctrlc').not_null().initial('1'),
             GDT_String('mira_triggered_by').maxlen(192).not_null().initial('mira,allagents').tooltip('tt_mira_triggered_by'),
             GDT_MiraMood('mira_mood').not_null().initial('idle').tooltip('tt_mira_mood'),
