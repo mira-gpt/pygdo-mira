@@ -5,8 +5,7 @@ Project-facing Mira context and helpers for the PyGDO chatbot system.
 
 ## Methods
 
-`mira.challenges` opens the Challenges page from the left sidebar. Challenge
-content and mechanics are not implemented yet.
+The `mira_challs` module adds the Challenges page to the left sidebar.
 
 `$mira.greet <name> [--lang=de]` queues a non-interrupting `$chatgreet`
 event asking Mira to greet the named person and share a brief update. Language

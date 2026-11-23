@@ -69,11 +69,6 @@ class module_mira(GDO_Module):
     def gdo_main_method_name(self) -> str:
         return 'hey_there'
 
-    def gdo_init_sidebar(self, page: 'GDT_Page'):
-        from gdo.base.util.href import href
-        from gdo.ui.GDT_Link import GDT_Link
-        page._left_bar.add_field(GDT_Link().href(href('mira_challs', 'challenges')).text('mt_mira_challenges').icon('trophy'))
-
     async def gdo_install(self):
         from gdo.video.module_video import module_video
         await module_video.instance().save_config_val('video_stream_sidebar', '1')
