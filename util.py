@@ -17,6 +17,19 @@ DEFAULT_MIRA_TMUX_USER = 'mira'
 MIRA_TMUX_HELPER = '/usr/local/bin/mira-tmux'
 
 
+def chat_show_context(event: str) -> str:
+    """Add configured show context, or honest unknowns outside Dog."""
+    try:
+        from gdo.mira.module_mira import module_mira
+        module = module_mira.instance()
+        if module:
+            return module.with_liveshow_state(event)
+    except Exception:
+        pass
+    header, separator, body = event.partition('\n')
+    return f'{header} --live=unknown --show-host=unknown{separator}{body}'
+
+
 def tmux_user() -> str:
     """Return the OS account which owns the agent's tmux socket.
 

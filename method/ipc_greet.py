@@ -20,8 +20,7 @@ class ipc_greet(Method):
 
     def gdo_execute(self):
         if Application.IS_DOG:
-            mode = module_mira.instance().cfg_mira_livemode()
-            send_to_mira(f'$chatgreet --live={mode} --user={self.param_val("user")} '
-                         f'--name={self.param_val("name")} --lang={self.param_val("lang")}',
-                         interrupt=False)
+            event = (f'$chatgreet --user={self.param_val("user")} '
+                     f'--name={self.param_val("name")} --lang={self.param_val("lang")}')
+            send_to_mira(module_mira.instance().with_liveshow_state(event), interrupt=False)
         return self.empty()

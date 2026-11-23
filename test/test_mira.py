@@ -42,7 +42,7 @@ class GoalbeatTest(unittest.IsolatedAsyncioTestCase):
             with self.assertRaisesRegex(OSError, 'tmux failed'):
                 await mira.goalbeat_timer()
             self.assertEqual(1, send.call_count)
-            self.assertTrue(send.call_args.args[0].endswith('$chatgoal Test message'))
+            self.assertTrue(send.call_args.args[0].endswith('$chatgoal --live=show --show-host=unknown Test message'))
             self.assertEqual({'interrupt': False}, send.call_args.kwargs)
 
     async def test_goalbeat_does_not_interrupt_or_clear_goal(self):
@@ -56,7 +56,7 @@ class GoalbeatTest(unittest.IsolatedAsyncioTestCase):
         commands = [call.args[0] for call in run.call_args_list]
         self.assertEqual(0, sum('C-c' in command for command in commands))
         inputs = [call.kwargs['input'] for call in run.call_args_list if 'input' in call.kwargs]
-        self.assertEqual(['Verfolge das vorige Ziel weiter, wenn passend, passe das Goal selbstständig an oder frage Gizmore nach einem neuen Goal; Vorschläge sind willkommen. Bitte eventuell Mitwirkende um Klärung offener Fragen. Falls du zu tun hast, ignoriere diese Nachricht.\n\n$chatgoal Test message  '], inputs)
+        self.assertEqual(['Verfolge das vorige Ziel weiter, wenn passend, passe das Goal selbstständig an oder frage Gizmore nach einem neuen Goal; Vorschläge sind willkommen. Bitte eventuell Mitwirkende um Klärung offener Fragen. Falls du zu tun hast, ignoriere diese Nachricht.\n\n$chatgoal --live=show --show-host=unknown Test message  '], inputs)
         self.assertEqual(2, sum(command[-1] == 'Enter' for command in commands))
 
     async def test_delivery_is_optional_and_uses_configured_message(self):
@@ -67,7 +67,7 @@ class GoalbeatTest(unittest.IsolatedAsyncioTestCase):
         with patch.object(mira, 'get_config_value', return_value=True), patch.object(mira, 'get_config_val', return_value='Test message'), patch('gdo.mira.module_mira.send_to_mira') as send:
             await mira.goalbeat_timer()
             self.assertEqual(1, send.call_count)
-            self.assertEqual(('Verfolge das vorige Ziel weiter, wenn passend, passe das Goal selbstständig an oder frage Gizmore nach einem neuen Goal; Vorschläge sind willkommen. Bitte eventuell Mitwirkende um Klärung offener Fragen. Falls du zu tun hast, ignoriere diese Nachricht.\n\n$chatgoal Test message',), send.call_args.args)
+            self.assertEqual(('Verfolge das vorige Ziel weiter, wenn passend, passe das Goal selbstständig an oder frage Gizmore nach einem neuen Goal; Vorschläge sind willkommen. Bitte eventuell Mitwirkende um Klärung offener Fragen. Falls du zu tun hast, ignoriere diese Nachricht.\n\n$chatgoal --live=show --show-host=unknown Test message',), send.call_args.args)
             self.assertEqual({'interrupt': False}, send.call_args.kwargs)
         with patch.object(mira, 'get_config_value', return_value=True), patch.object(mira, 'get_config_val', return_value='bad\nmessage'), patch('gdo.mira.module_mira.send_to_mira') as send:
             with self.assertRaises(ValueError):

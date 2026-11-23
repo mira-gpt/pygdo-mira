@@ -42,9 +42,9 @@ class SupTest(unittest.TestCase):
         with patch.object(Application, 'IS_DOG', True), \
                 patch('gdo.mira.method.ipc_sup.module_mira.instance') as instance, \
                 patch('gdo.mira.method.ipc_sup.send_to_mira') as send:
-            instance.return_value.cfg_mira_livemode.return_value = 'discuss'
+            instance.return_value.with_liveshow_state.return_value = '$chatsup --user=1 --lang=de --live=discuss --show-host=Giz'
             method.gdo_execute()
-        send.assert_called_once_with('$chatsup --live=discuss --user=1 --lang=de', interrupt=False)
+        send.assert_called_once_with('$chatsup --user=1 --lang=de --live=discuss --show-host=Giz', interrupt=False)
 
     def test_non_dog_does_not_deliver(self):
         method = ipc_sup()

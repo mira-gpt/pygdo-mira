@@ -17,7 +17,6 @@ class ipc_sup(Method):
 
     def gdo_execute(self):
         if Application.IS_DOG:
-            mode = module_mira.instance().cfg_mira_livemode()
-            send_to_mira(f'$chatsup --live={mode} --user={self.param_val("user")} --lang={self.param_val("lang")}',
-                         interrupt=False)
+            event = f'$chatsup --user={self.param_val("user")} --lang={self.param_val("lang")}'
+            send_to_mira(module_mira.instance().with_liveshow_state(event), interrupt=False)
         return self.empty()

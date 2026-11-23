@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 QUEUE = ROOT / "inqueue" / "micro1"
 sys.path.insert(0, str(ROOT.parents[1]))
 
-from gdo.mira.util import send_to_mira  # noqa: E402
+from gdo.mira.util import chat_show_context, send_to_mira  # noqa: E402
 
 
 MIRA_ADDRESS = re.compile(r"^mira(?:[\s:,!.?]|$)", re.IGNORECASE)
@@ -46,7 +46,7 @@ def process(path: Path) -> None:
     path.unlink(missing_ok=True)
     if any(MIRA_ADDRESS.match(line) for line in payload_lines(ibdes)):
         # Keep the full local context so $chat has the normal IBDES envelope.
-        send_to_mira(f"$chat\n{ibdes.rstrip('\\r\\n')}\n$chat_done")
+        send_to_mira(chat_show_context(f"$chat\n{ibdes.rstrip('\\r\\n')}\n$chat_done"))
         print("Delivered explicit micro1 call.", flush=True)
     else:
         print("Transcript kept local; no 'mira' wake word.", flush=True)

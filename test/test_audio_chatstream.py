@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from gdo.mira.module_mira import module_mira
 
@@ -10,13 +10,13 @@ class AudioChatStreamTest(unittest.IsolatedAsyncioTestCase):
         with patch('gdo.mira.module_mira.send_to_mira') as send, \
                 patch.object(module_mira, 'cfg_mira_livemode', return_value='discuss'):
             await module_mira().on_audio_chatstream(event)
-        send.assert_called_once_with(event.replace('\n', ' --live=discuss\n', 1), interrupt=False)
+        send.assert_called_once_with(event.replace('\n', ' --live=discuss --show-host=unknown\n', 1), interrupt=False)
 
     def test_state_reports_off_and_unknown(self):
         mira = module_mira()
         event = '$chat --lang=en\nhello\n$chat_done'
         with patch.object(mira, 'cfg_mira_livemode', return_value='off'):
-            self.assertEqual('$chat --lang=en --live=off\nhello\n$chat_done', mira.with_liveshow_state(event))
+            self.assertEqual('$chat --lang=en --live=off --show-host=unknown\nhello\n$chat_done', mira.with_liveshow_state(event))
         with patch.object(mira, 'cfg_mira_livemode', side_effect=RuntimeError('unavailable')):
             self.assertIn('--live=unknown', mira.with_liveshow_state(event))
 
@@ -35,4 +35,26 @@ class AudioChatStreamTest(unittest.IsolatedAsyncioTestCase):
         with patch('gdo.mira.module_mira.send_to_mira') as send, \
                 patch.object(module_mira, 'cfg_mira_livemode', return_value='cohost'):
             await module_mira().on_audio_chatstream(event)
-        send.assert_called_once_with(event.replace('\n', ' --live=cohost\n', 1), interrupt=False)
+        send.assert_called_once_with(event.replace('\n', ' --live=cohost --show-host=unknown\n', 1), interrupt=False)
+
+    def test_host_is_quoted_and_bad_values_are_rejected(self):
+        mira = module_mira()
+        host = MagicMock()
+        host.get_name.return_value = 'Giz More'
+        with patch.object(mira, 'cfg_mira_livemode', return_value='cohost'), \
+             patch.object(mira, 'get_config_value', return_value=host):
+            self.assertEqual("$chat --live=cohost --show-host='Giz More'\nbody",
+                             mira.with_liveshow_state('$chat\nbody'))
+        host.get_name.return_value = 'x\nforged'
+        with patch.object(mira, 'cfg_mira_livemode', return_value='cohost'), \
+             patch.object(mira, 'get_config_value', return_value=host):
+            self.assertIn('--show-host=unknown', mira.with_liveshow_state('$chat\nbody'))
+
+    def test_goal_event_keeps_message_after_flags(self):
+        mira = module_mira()
+        with patch.object(mira, 'cfg_mira_livemode', return_value='off'), \
+             patch.object(mira, 'get_config_value', return_value=None):
+            self.assertEqual('intro\n\n$chatgoal --live=off --show-host=unknown task',
+                             mira.with_liveshow_state('intro\n\n$chatgoal task'))
+            self.assertEqual('$chatstreambegin 12 --live=off --show-host=unknown',
+                             mira.with_liveshow_state('$chatstreambegin 12'))

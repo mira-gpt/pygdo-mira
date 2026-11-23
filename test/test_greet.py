@@ -57,9 +57,9 @@ class GreetTest(unittest.TestCase):
         with patch.object(Application, 'IS_DOG', True), \
                 patch('gdo.mira.method.ipc_greet.module_mira.instance') as instance, \
                 patch('gdo.mira.method.ipc_greet.send_to_mira') as send:
-            instance.return_value.cfg_mira_livemode.return_value = 'show'
+            instance.return_value.with_liveshow_state.return_value = '$chatgreet --user=7 --name=Pawel --lang=ko --live=show --show-host=Giz'
             method.gdo_execute()
-        send.assert_called_once_with('$chatgreet --live=show --user=7 --name=Pawel --lang=ko', interrupt=False)
+        send.assert_called_once_with('$chatgreet --user=7 --name=Pawel --lang=ko --live=show --show-host=Giz', interrupt=False)
         with patch.object(Application, 'IS_DOG', False), patch('gdo.mira.method.ipc_greet.send_to_mira') as send:
             method.gdo_execute()
         send.assert_not_called()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import shlex
 from urllib.parse import quote
 
 from gdo.base.Message import Message
@@ -13,6 +14,7 @@ from gdo.base.Logger import Logger
 from gdo.base.Render import Mode
 from gdo.base.Util import Files, Strings
 from gdo.core.GDO_User import GDO_User
+from gdo.core.GDT_User import GDT_User
 from gdo.core.GDT_Bool import GDT_Bool
 from gdo.core.GDT_Decimal import GDT_Decimal
 from gdo.core.GDT_String import GDT_String
@@ -82,6 +84,7 @@ class module_mira(GDO_Module):
             GDT_String('mira_triggered_by').maxlen(192).not_null().initial('mira,allagents').tooltip('tt_mira_triggered_by'),
             GDT_MiraMood('mira_mood').not_null().initial('idle').tooltip('tt_mira_mood'),
             GDT_MiraLiveMode().tooltip('tt_mira_livemode'),
+            GDT_User('mira_show_host').tooltip('tt_mira_show_host'),
             GDT_Decimal('mira_btx_creds_per_letter').digits(8, 2).precision(2).min(0).max(99999999).not_null().initial('1.00').tooltip('tt_mira_btx_creds_per_letter'),
             GDT_Bool('mira_current_song_enabled').not_null().initial('1').tooltip('tt_mira_current_song_enabled'),
             GDT_Duration('live_away_msg_cycle_time').not_null().min(.2).max(300).initial('1s 420ms').tooltip('tt_mira_live_away_msg_cycle_time'),
@@ -193,8 +196,24 @@ class module_mira(GDO_Module):
             state = self.cfg_mira_livemode()
         except Exception:
             state = 'unknown'
-        header, separator, body = event.partition('\n')
-        return f'{header} --live={state}{separator}{body}'
+        try:
+            user = self.get_config_value('mira_show_host')
+            host = user.get_name() if user else 'unknown'
+            if not isinstance(host, str) or not re.fullmatch(r'[\w .{}@-]{1,64}', host):
+                host = 'unknown'
+        except Exception:
+            host = 'unknown'
+        lines = event.splitlines(keepends=True)
+        for i, line in enumerate(lines):
+            if re.match(r'^\$chat(?!_done)[a-z]*(?:\s|$)', line):
+                newline = '\n' if line.endswith('\n') else ''
+                text = line.rstrip('\n')
+                if text.startswith('$chatgoal '):
+                    lines[i] = f'$chatgoal --live={state} --show-host={shlex.quote(host)} {text[len("$chatgoal "):]}{newline}'
+                else:
+                    lines[i] = f'{text} --live={state} --show-host={shlex.quote(host)}{newline}'
+                break
+        return ''.join(lines)
 
     async def on_cc(self):
         pass  # Conversations shall survive a cache clear and Dog restart.
@@ -212,7 +231,8 @@ class module_mira(GDO_Module):
             message = self.get_config_val('goalbeat_message')
             if not isinstance(message, str) or not message or any(c in message for c in '\r\n\0'):
                 raise ValueError('Goalbeat message must be a non-empty single line')
-            send_to_mira(f'Verfolge das vorige Ziel weiter, wenn passend, passe das Goal selbstständig an oder frage Gizmore nach einem neuen Goal; Vorschläge sind willkommen. Bitte eventuell Mitwirkende um Klärung offener Fragen. Falls du zu tun hast, ignoriere diese Nachricht.\n\n$chatgoal {message}', interrupt=False)
+            event = f'Verfolge das vorige Ziel weiter, wenn passend, passe das Goal selbstständig an oder frage Gizmore nach einem neuen Goal; Vorschläge sind willkommen. Bitte eventuell Mitwirkende um Klärung offener Fragen. Falls du zu tun hast, ignoriere diese Nachricht.\n\n$chatgoal {message}'
+            send_to_mira(self.with_liveshow_state(event), interrupt=False)
 
     def health_changes(self, states: dict[str, bool]) -> list[tuple[str, bool]]:
         """Remember connector states and return only real transitions."""
