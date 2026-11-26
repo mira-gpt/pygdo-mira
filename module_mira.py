@@ -74,9 +74,7 @@ class module_mira(GDO_Module):
 
     async def gdo_install(self):
         from gdo.mira.Teams import seed_teams
-        from gdo.video.module_video import module_video
         seed_teams()
-        await module_video.instance().save_config_val('video_stream_sidebar', '1')
 
     def gdo_module_config(self) -> list[GDT]:
         return [
