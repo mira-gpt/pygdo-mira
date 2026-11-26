@@ -58,7 +58,8 @@ class module_mira(GDO_Module):
 
     def gdo_classes(self) -> list[type[GDO]]:
         from gdo.mira.GDO_MiraFAQ import GDO_MiraFAQ
-        return [GDO_MiraFAQ]
+        from gdo.mira.GDO_MiraTeam import GDO_MiraTeam
+        return [GDO_MiraFAQ, GDO_MiraTeam]
 
     def gdo_dependencies(self) -> list:
         return [
@@ -72,7 +73,9 @@ class module_mira(GDO_Module):
         return 'hey_there'
 
     async def gdo_install(self):
+        from gdo.mira.Teams import seed_teams
         from gdo.video.module_video import module_video
+        seed_teams()
         await module_video.instance().save_config_val('video_stream_sidebar', '1')
 
     def gdo_module_config(self) -> list[GDT]:
