@@ -19,7 +19,7 @@ class DogBackupStartTest(unittest.TestCase):
             backup.write_text('#!/bin/sh\nprintf "backup %s\\n" "$1"\nexit %d\n' % ('%s', backup_exit))
             backup.chmod(0o700)
             python = root / 'fake-python'
-            python.write_text('#!/bin/sh\necho DOG_STARTED\n')
+            python.write_text('#!/bin/sh\necho DOG_STARTED "$@"\n')
             python.chmod(0o700)
             log = root / 'dog.log'
             result = subprocess.run(['bash', str(script), '--config=protected/custom.toml'],
@@ -27,14 +27,15 @@ class DogBackupStartTest(unittest.TestCase):
                                          'MIRA_DOG_LOG': str(log)}, capture_output=True)
             return result.returncode, log.read_text()
 
-    def test_successful_backup_precedes_start_with_selected_config(self):
+    def test_start_does_not_run_backup_and_forwards_config(self):
         code, log = self.run_launcher(0)
         self.assertEqual(0, code)
-        self.assertIn('backup --config=protected/custom.toml', log)
-        self.assertLess(log.index('backup '), log.index('DOG_STARTED'))
+        self.assertNotIn('backup ', log)
+        self.assertIn('DOG_STARTED', log)
+        self.assertIn('--config=protected/custom.toml', log)
 
-    def test_failed_backup_aborts_start(self):
+    def test_backup_failure_does_not_block_start(self):
         code, log = self.run_launcher(1)
-        self.assertNotEqual(0, code)
-        self.assertIn('Dog not started: backup failed.', log)
-        self.assertNotIn('DOG_STARTED', log)
+        self.assertEqual(0, code)
+        self.assertNotIn('backup ', log)
+        self.assertIn('DOG_STARTED', log)
