@@ -33,7 +33,7 @@ class BtxTest(unittest.TestCase):
                 patch('gdo.mira.method.btx.queue_ticker') as send:
             self.assertEqual(1, method.gdo_method_price())
             method.gdo_execute()
-        send.assert_called_once_with('testuser: hello')
+        send.assert_called_once_with('testuser: hello', repeats=2)
         method.reply.assert_called_once_with('mira_btx_queued', ('1',))
 
     def test_denied_balance_never_queues(self):

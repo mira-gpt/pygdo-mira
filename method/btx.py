@@ -35,7 +35,7 @@ class btx(Method):
             if not self.has_price_permission(self._env_user):
                 return self.empty()
             name = ''.join(c for c in self._env_user.get_name() if c.isprintable())[:50]
-            queue_ticker(f'{name}: {text}')
+            queue_ticker(f'{name}: {text}', repeats=2)
             return self.reply('mira_btx_queued', (str(price),))
         except (ValueError, RuntimeError, OSError) as error:
             return self.err('mira_btx_error', (str(error),))
