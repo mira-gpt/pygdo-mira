@@ -260,7 +260,7 @@ the actual monitor brightness; virtual-camera mode dims the composite.
 
 `$mira.current_song` (short trigger `$np`) reads currently playing MPRIS metadata from the desktop
 session selected by `audio_output_session_user` (or Dog's own session when
-unset). In `show` and `cohost` live modes, the enabled-by-default
+unset). In `show` and `recording` live modes, the enabled-by-default
 `mira_current_song_enabled` monitor checks for song changes and queues one
 `Now playing: artist - title` message on the microphone ticker. It keeps the
 current track eligible for announcement again after returning to either mode from

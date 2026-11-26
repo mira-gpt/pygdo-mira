@@ -105,6 +105,9 @@ class module_mira(GDO_Module):
 
     def cfg_mira_livemode(self) -> str:
         mode = self.get_config_val('mira_livemode')
+        if mode == 'cohost':
+            # Preserve existing live-show intent without retaining a separate mode.
+            return 'show'
         if mode in GDT_MiraLiveMode.MODES:
             return mode
         return 'show' if self.get_config_value('mira_quacking') else 'off'
@@ -177,7 +180,7 @@ class module_mira(GDO_Module):
     async def current_song_timer(self):
         if not Application.IS_DOG:
             return
-        if self.cfg_mira_livemode() not in ('show', 'cohost'):
+        if self.cfg_mira_livemode() not in ('show', 'recording'):
             self.current_song_monitor.player_tracks.clear()
             self.current_song_monitor.current = None
             return

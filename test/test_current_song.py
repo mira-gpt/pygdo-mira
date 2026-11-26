@@ -41,13 +41,13 @@ class SongMonitorTest(unittest.IsolatedAsyncioTestCase):
             await monitor.poll()
         events.publish.assert_awaited_once_with('mira_current_song_changed', 'Artist', 'Song')
 
-    async def test_cohost_monitors_song_changes(self):
+    async def test_recording_monitors_song_changes(self):
         from gdo.base.Application import Application
         from gdo.mira.module_mira import module_mira
         module = module_mira()
         module.current_song_monitor = MagicMock()
         module.current_song_monitor.poll = AsyncMock()
-        module.cfg_mira_livemode = MagicMock(return_value='cohost')
+        module.cfg_mira_livemode = MagicMock(return_value='recording')
         module.get_config_val = MagicMock(return_value='1')
         with patch.object(Application, 'IS_DOG', True):
             await module.current_song_timer()
