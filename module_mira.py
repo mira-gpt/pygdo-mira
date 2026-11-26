@@ -291,6 +291,12 @@ class module_mira(GDO_Module):
         setting = enabled().env_channel(channel)._get_config_channel('disabled', channel)
         return not setting.get_value()
 
+    def is_live_channel(self, channel) -> bool:
+        if channel is None:
+            return False
+        from gdo.mira.method.enabled import enabled
+        return bool(enabled().env_channel(channel).get_config_channel_value('live_channel'))
+
     @staticmethod
     def heartbeat_method(channel):
         from gdo.mira.method.heartbeat import heartbeat
@@ -466,8 +472,17 @@ class module_mira(GDO_Module):
     @classmethod
     def chat_event(cls, channel, payload: str) -> str:
         """Wrap routed context with an explicit, complete chat envelope."""
-        return (f'$chat --lang={cls.chat_language(channel)} --trigger={cls.chat_trigger(channel)} '
-                f'--mic-lang={cls.microphone_language()}\n' +
+        language = cls.chat_language(channel)
+        mic_language = cls.microphone_language()
+        try:
+            mira = cls.instance()
+            if (channel is not None and mira.cfg_mira_livemode() in ('show', 'recording')
+                    and mira.is_live_channel(channel) and mic_language != 'unknown'):
+                language = mic_language
+        except Exception:
+            pass  # Keep the channel language if the setting is unavailable.
+        return (f'$chat --lang={language} --trigger={cls.chat_trigger(channel)} '
+                f'--mic-lang={mic_language}\n' +
                 payload.rstrip('\r\n') + '\n$chat_done')
 
     @classmethod

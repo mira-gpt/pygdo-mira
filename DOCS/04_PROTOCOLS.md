@@ -59,9 +59,15 @@ $chat --lang=de
 2026-09-16 12:00:00.000000 #53 gizmore{rizon} mira, hallo
 ```
 
-`--lang` is a lower-case ISO-639-1 code and defaults to `en` when no channel
-is available or its setting is invalid. It is metadata for Mira's reply
-language; it does not alter the IBDES records that follow.
+`--lang` is a lower-case language code and defaults to `en` when no channel
+is available or its setting is invalid. In show or recording mode, a channel
+can opt into the current microphone language for replies by setting
+`$confc mira.enabled live_channel 1` in that channel. Other channels and
+private chats retain their own language. The hint does not alter the IBDES
+records that follow. An unavailable microphone language falls back to the
+channel language. The owner command `$video.lang de` also saves the selected
+language as `chan_language` on every marked live channel; this persists after
+the show ends and can be changed again with the channel settings.
 
 `--mic-lang` carries the configured microphone language (two or three
 lowercase letters), or `unknown` if unavailable. It is a show-language hint,

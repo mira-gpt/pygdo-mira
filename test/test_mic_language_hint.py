@@ -6,6 +6,21 @@ from gdo.mira.module_mira import module_mira
 
 
 class MicLanguageHintTest(unittest.TestCase):
+    def test_only_live_channels_follow_show_language(self):
+        channel = SimpleNamespace(get_lang_iso=lambda: 'de', get_trigger=lambda: '.')
+        mira = MagicMock()
+        mira.cfg_mira_livemode.return_value = 'show'
+        with patch.object(module_mira, 'instance', return_value=mira), \
+             patch.object(module_mira, 'microphone_language', return_value='fr'):
+            mira.is_live_channel.return_value = True
+            self.assertIn('--lang=fr ', module_mira.chat_event(channel, 'hello'))
+            mira.is_live_channel.return_value = False
+            self.assertIn('--lang=de ', module_mira.chat_event(channel, 'hello'))
+            mira.is_live_channel.return_value = True
+            mira.cfg_mira_livemode.return_value = 'off'
+            self.assertIn('--lang=de ', module_mira.chat_event(channel, 'hello'))
+            self.assertIn('--lang=en ', module_mira.chat_event(None, 'hello'))
+
     def test_chat_uses_audio_setting_and_preserves_reply_language(self):
         channel = SimpleNamespace(get_lang_iso=lambda: 'de', get_trigger=lambda: '.')
         audio = MagicMock()

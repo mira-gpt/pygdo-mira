@@ -26,6 +26,10 @@ class enabled(Method):
             GDT_Bool('enabled').not_null().positional(),
         ]
 
+    @classmethod
+    def gdo_method_config_channel(cls) -> list[GDT]:
+        return [GDT_Bool('live_channel').not_null().initial('0').tooltip('tt_mira_live_channel')]
+
     def gdo_execute(self) -> GDT:
         enabled = self.param_value('enabled')
         self.save_config_channel('disabled', '0' if enabled else '1')
