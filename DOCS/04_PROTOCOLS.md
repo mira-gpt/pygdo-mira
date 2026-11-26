@@ -63,6 +63,15 @@ $chat --lang=de
 is available or its setting is invalid. It is metadata for Mira's reply
 language; it does not alter the IBDES records that follow.
 
+`--mic-lang` carries the configured microphone language (two or three
+lowercase letters), or `unknown` if unavailable. It is a show-language hint,
+not evidence that the microphone is active, and does not override `--lang`
+for the routed reply.
+
+`--comment-command=1` identifies an opt-in WebSocket command event for Mira
+to comment on; it does not authorize re-executing the command. Dog processes
+the original command normally.
+
 ## Unprefixed messages
 
 Parsers inspect messages in this order:

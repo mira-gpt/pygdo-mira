@@ -214,6 +214,8 @@ class module_mira(GDO_Module):
                 if text.startswith('$chatgoal '):
                     lines[i] = f'$chatgoal --live={state} --show-host={shlex.quote(host)} {text[len("$chatgoal "):]}{newline}'
                 else:
+                    if (text == '$chat' or text.startswith('$chat ')) and not re.search(r'(?:^|\s)--mic-lang=', text):
+                        text += f' --mic-lang={self.microphone_language()}'
                     lines[i] = f'{text} --live={state} --show-host={shlex.quote(host)}{newline}'
                 break
         return ''.join(lines)
@@ -448,10 +450,23 @@ class module_mira(GDO_Module):
         trigger = str(trigger)
         return trigger if len(trigger) == 1 else '$'
 
+    @staticmethod
+    def microphone_language() -> str:
+        """Read the audio setting without treating it as proof of active capture."""
+        try:
+            from gdo.audio.module_audio import module_audio
+            language = module_audio.instance().get_config_val('audio_microphone_language')
+            if isinstance(language, str) and re.fullmatch(r'[a-z]{2,3}', language):
+                return language
+        except Exception:
+            pass
+        return 'unknown'
+
     @classmethod
     def chat_event(cls, channel, payload: str) -> str:
         """Wrap routed context with an explicit, complete chat envelope."""
-        return (f'$chat --lang={cls.chat_language(channel)} --trigger={cls.chat_trigger(channel)}\n' +
+        return (f'$chat --lang={cls.chat_language(channel)} --trigger={cls.chat_trigger(channel)} '
+                f'--mic-lang={cls.microphone_language()}\n' +
                 payload.rstrip('\r\n') + '\n$chat_done')
 
     @classmethod
@@ -511,6 +526,22 @@ class module_mira(GDO_Module):
         context[key] = (source_id, now)
         return bool(previous and previous[0] != source_id and now - previous[1] <= INBOUND_MIRROR_WINDOW)
 
+    @staticmethod
+    def websocket_commentary_requested(message: Message) -> bool:
+        """Opt in to commentary without changing or executing the incoming command."""
+        server = getattr(message, '_env_server', None)
+        if not server or server.gdo_val('serv_connector') != 'websocket':
+            return False
+        text = getattr(message, '_message', '') or ''
+        trigger = message.get_trigger()
+        if not trigger or not text.startswith(trigger) or not text[len(trigger):].strip():
+            return False
+        try:
+            from gdo.websocket.module_websocket import module_websocket
+            return module_websocket.instance().cfg_mira_comment_commands()
+        except (ImportError, AttributeError, RuntimeError):
+            return False
+
     async def on_message(self, message: Message, out_instead_of_in: bool=False):
         # LinkUUp HTTP input reaches the Dog through its explicit IPC queue. Its
         # room channels are Mira conversations by design, so do not require users
@@ -568,13 +599,17 @@ class module_mira(GDO_Module):
         if self.is_shadowlamb_reply(channel, author, message._env_server):
             return
 
-        if (is_lup or immediate_notice or self.is_addressed(payload)) and out_instead_of_in == False:
+        comment_command = not out_instead_of_in and self.websocket_commentary_requested(message)
+        if (is_lup or immediate_notice or self.is_addressed(payload) or comment_command) and out_instead_of_in == False:
             payload = self.read_context(path)
             if not payload:
                 Files.remove(path)
                 return
             try:
-                send_to_mira(self.with_liveshow_state(self.chat_event(channel, payload)))
+                event = self.chat_event(channel, payload)
+                if comment_command:
+                    event = event.replace('$chat ', '$chat --comment-command=1 ', 1)
+                send_to_mira(self.with_liveshow_state(event))
             except Exception as error:
                 Logger.exception(error)
             else:

@@ -27,6 +27,8 @@ def chat_show_context(event: str) -> str:
     except Exception:
         pass
     header, separator, body = event.partition('\n')
+    if (header == '$chat' or header.startswith('$chat ')) and not re.search(r'(?:^|\s)--mic-lang=', header):
+        header += ' --mic-lang=unknown'
     return f'{header} --live=unknown --show-host=unknown{separator}{body}'
 
 

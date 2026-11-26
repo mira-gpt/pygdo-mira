@@ -226,7 +226,8 @@ class module_mira_Test(GDOTestCase):
         self.assertEqual('de', module_mira.chat_language(channel))
         self.assertEqual('en', module_mira.chat_language(None))
         self.assertEqual('en', module_mira.chat_language(SimpleNamespace(get_lang_iso=lambda: 'invalid')))
-        self.assertEqual('$chat --lang=de --trigger=$\nhello\n$chat_done', module_mira.chat_event(channel, 'hello'))
+        with patch.object(module_mira, 'microphone_language', return_value='en'):
+            self.assertEqual('$chat --lang=de --trigger=$ --mic-lang=en\nhello\n$chat_done', module_mira.chat_event(channel, 'hello'))
         self.assertEqual(f'$heartbeat #{channel.get_id()} --lang=de\nhello', module_mira.heartbeat_event(channel, 'hello'))
 
     def test_05bb_chatjoin_identifies_the_channel_and_joining_user(self):

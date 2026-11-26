@@ -15,8 +15,9 @@ class AudioChatStreamTest(unittest.IsolatedAsyncioTestCase):
     def test_state_reports_off_and_unknown(self):
         mira = module_mira()
         event = '$chat --lang=en\nhello\n$chat_done'
-        with patch.object(mira, 'cfg_mira_livemode', return_value='off'):
-            self.assertEqual('$chat --lang=en --live=off --show-host=unknown\nhello\n$chat_done', mira.with_liveshow_state(event))
+        with patch.object(mira, 'cfg_mira_livemode', return_value='off'), \
+             patch.object(mira, 'microphone_language', return_value='de'):
+            self.assertEqual('$chat --lang=en --mic-lang=de --live=off --show-host=unknown\nhello\n$chat_done', mira.with_liveshow_state(event))
         with patch.object(mira, 'cfg_mira_livemode', side_effect=RuntimeError('unavailable')):
             self.assertIn('--live=unknown', mira.with_liveshow_state(event))
 
@@ -42,8 +43,9 @@ class AudioChatStreamTest(unittest.IsolatedAsyncioTestCase):
         host = MagicMock()
         host.get_name.return_value = 'Giz More'
         with patch.object(mira, 'cfg_mira_livemode', return_value='cohost'), \
-             patch.object(mira, 'get_config_value', return_value=host):
-            self.assertEqual("$chat --live=cohost --show-host='Giz More'\nbody",
+             patch.object(mira, 'get_config_value', return_value=host), \
+             patch.object(mira, 'microphone_language', return_value='en'):
+            self.assertEqual("$chat --mic-lang=en --live=cohost --show-host='Giz More'\nbody",
                              mira.with_liveshow_state('$chat\nbody'))
         host.get_name.return_value = 'x\nforged'
         with patch.object(mira, 'cfg_mira_livemode', return_value='cohost'), \
