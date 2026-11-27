@@ -118,11 +118,11 @@ def current_agent_busy() -> bool | None:
 
 
 def with_busy_hint(text: str, busy: bool | None) -> str:
-    """Add a verified busy hint to an event header; unknown leaves it absent."""
-    if busy is None:
-        return text
-    if not isinstance(busy, bool):
+    """Mark busy events; idle and unknown events carry no busy hint."""
+    if busy is not None and not isinstance(busy, bool):
         raise ValueError('busy must be True, False, or None')
+    if not busy:
+        return text
     return re.sub(r'(?m)^(\$(?!chat_done\b)[a-z][a-z0-9_-]*)(?=\s|$)',
                   lambda match: f'{match.group(1)} --you-busy={int(busy)}', text, count=1)
 

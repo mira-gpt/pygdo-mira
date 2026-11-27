@@ -86,8 +86,9 @@ context flush; the default is `mira,allagents`. Matching is case-insensitive
 and respects the existing nickname boundaries. Channel and user forwarding
 permissions still apply.
 
-Event delivery adds `--you-busy=1` or `--you-busy=0` when the configured
-Codex commentary log has a recent activity marker. For other agents, set
+Event delivery adds `--you-busy=1` when the configured Codex commentary log
+has a recent busy marker. Idle and unknown states leave the event unchanged;
+an absent hint does not prove the agent is idle. For other agents, set
 `MIRA_AGENT_STATE_FILE` in the Dog process environment to an agent-owned JSON
 file with `agent`, `session_id`, `state` (`busy` or `idle`), and Unix timestamp
 `updated`. The agent and session must match `agent_name` and `agent_session_id`.

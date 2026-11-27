@@ -12,7 +12,7 @@ class BusyHintTest(unittest.TestCase):
     def test_busy_and_idle_on_distinct_events(self):
         self.assertEqual(with_busy_hint('$chat --lang=en\nhello\n$chat_done', True),
                          '$chat --you-busy=1 --lang=en\nhello\n$chat_done')
-        self.assertEqual(with_busy_hint('$heartbeat #84', False), '$heartbeat --you-busy=0 #84')
+        self.assertEqual(with_busy_hint('$heartbeat #84', False), '$heartbeat #84')
 
     def test_unknown_does_not_claim_idle(self):
         event = '$chat --lang=en\nhello\n$chat_done'
