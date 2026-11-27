@@ -616,7 +616,11 @@ class module_mira(GDO_Module):
             return
 
         comment_command = not out_instead_of_in and self.websocket_commentary_requested(message)
-        if (is_lup or immediate_notice or self.is_addressed(payload) or comment_command) and out_instead_of_in == False:
+        loader = getattr(Application, 'LOADER', None)
+        botgaming = loader.get_module('botgaming') if loader else None
+        game_host = bool(not out_instead_of_in and botgaming and botgaming.is_enabled()
+                         and botgaming.is_game_host(author))
+        if (is_lup or immediate_notice or game_host or self.is_addressed(payload) or comment_command) and out_instead_of_in == False:
             payload = self.read_context(path)
             if not payload:
                 Files.remove(path)
