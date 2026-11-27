@@ -80,7 +80,7 @@ class module_mira(GDO_Module):
         return [
             GDT_String('agent_name').ascii().minlen(1).maxlen(32).not_null().initial('mira'),
             GDT_String('agent_session_id').ascii().maxlen(128),
-            GDT_Text('agent_skill_tags'),
+            GDT_Text('agent_skill_tags').tooltip('tt_agent_skill_tags'),
             GDT_Bool('agent_ctrlc').not_null().initial('1'),
             GDT_String('mira_triggered_by').maxlen(192).not_null().initial('mira,allagents').tooltip('tt_mira_triggered_by'),
             GDT_MiraMood('mira_mood').not_null().initial('idle').tooltip('tt_mira_mood'),
