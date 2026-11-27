@@ -7,7 +7,7 @@ from gdo.mira.module_mira import module_mira
 
 class MicLanguageHintTest(unittest.TestCase):
     def test_only_live_channels_follow_show_language(self):
-        channel = SimpleNamespace(get_lang_iso=lambda: 'de', get_trigger=lambda: '.')
+        channel = SimpleNamespace(get_lang_iso=lambda: 'de', get_trigger=lambda: '.', get_id=lambda: 240)
         mira = MagicMock()
         mira.cfg_mira_livemode.return_value = 'show'
         with patch.object(module_mira, 'instance', return_value=mira), \
@@ -22,12 +22,12 @@ class MicLanguageHintTest(unittest.TestCase):
             self.assertIn('--lang=en ', module_mira.chat_event(None, 'hello'))
 
     def test_chat_uses_audio_setting_and_preserves_reply_language(self):
-        channel = SimpleNamespace(get_lang_iso=lambda: 'de', get_trigger=lambda: '.')
+        channel = SimpleNamespace(get_lang_iso=lambda: 'de', get_trigger=lambda: '.', get_id=lambda: 240)
         audio = MagicMock()
         audio.get_config_val.return_value = 'fr'
         with patch('gdo.audio.module_audio.module_audio.instance', return_value=audio):
             event = module_mira.chat_event(channel, 'hello')
-        self.assertEqual('$chat --lang=de --trigger=. --mic-lang=fr\nhello\n$chat_done', event)
+        self.assertEqual('$chat --reply-in=240 --lang=de --trigger=. --mic-lang=fr\nhello\n$chat_done', event)
         audio.get_config_val.assert_called_once_with('audio_microphone_language')
 
     def test_invalid_and_unavailable_settings_are_unknown(self):

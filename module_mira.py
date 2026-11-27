@@ -470,7 +470,7 @@ class module_mira(GDO_Module):
         return 'unknown'
 
     @classmethod
-    def chat_event(cls, channel, payload: str) -> str:
+    def chat_event(cls, channel, payload: str, author=None) -> str:
         """Wrap routed context with an explicit, complete chat envelope."""
         language = cls.chat_language(channel)
         mic_language = cls.microphone_language()
@@ -481,7 +481,16 @@ class module_mira(GDO_Module):
                 language = mic_language
         except Exception:
             pass  # Keep the channel language if the setting is unavailable.
-        return (f'$chat --lang={language} --trigger={cls.chat_trigger(channel)} '
+        route = ''
+        target = channel if channel is not None else author
+        if target is not None:
+            try:
+                target_id = str(target.get_id())
+                if re.fullmatch(r'[1-9][0-9]*', target_id):
+                    route = f' --reply-{("in" if channel is not None else "to")}={target_id}'
+            except (AttributeError, TypeError, ValueError):
+                pass
+        return (f'$chat{route} --lang={language} --trigger={cls.chat_trigger(channel)} '
                 f'--mic-lang={mic_language}\n' +
                 payload.rstrip('\r\n') + '\n$chat_done')
 
@@ -626,7 +635,7 @@ class module_mira(GDO_Module):
                 Files.remove(path)
                 return
             try:
-                event = self.chat_event(channel, payload)
+                event = self.chat_event(channel, payload, author)
                 if comment_command:
                     event = event.replace('$chat ', '$chat --comment-command=1 ', 1)
                 send_to_mira(self.with_liveshow_state(event))
