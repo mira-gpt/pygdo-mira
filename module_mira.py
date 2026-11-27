@@ -86,6 +86,7 @@ class module_mira(GDO_Module):
             GDT_MiraMood('mira_mood').not_null().initial('idle').tooltip('tt_mira_mood'),
             GDT_MiraLiveMode().tooltip('tt_mira_livemode'),
             GDT_User('mira_show_host').tooltip('tt_mira_show_host'),
+            GDT_String('mira_ticker_baselang').ascii().minlen(2).maxlen(3).pattern(r'^[a-z]{2,3}$').not_null().initial('en').tooltip('tt_mira_ticker_baselang'),
             GDT_Decimal('mira_btx_creds_per_letter').digits(8, 2).precision(2).min(0).max(99999999).not_null().initial('1.00').tooltip('tt_mira_btx_creds_per_letter'),
             GDT_Bool('mira_current_song_enabled').not_null().initial('1').tooltip('tt_mira_current_song_enabled'),
             GDT_Duration('live_away_msg_cycle_time').not_null().min(.2).max(300).initial('1s 420ms').tooltip('tt_mira_live_away_msg_cycle_time'),
@@ -217,6 +218,14 @@ class module_mira(GDO_Module):
                 else:
                     if (text == '$chat' or text.startswith('$chat ')) and not re.search(r'(?:^|\s)--mic-lang=', text):
                         text += f' --mic-lang={self.microphone_language()}'
+                    if (text == '$chat' or text.startswith('$chat ') or text.startswith('$chatstream ')) and not re.search(r'(?:^|\s)--ticker-baselang=', text):
+                        try:
+                            base = self.get_config_val('mira_ticker_baselang')
+                        except Exception:
+                            base = None
+                        if not isinstance(base, str) or not re.fullmatch(r'[a-z]{2,3}', base):
+                            base = 'en'
+                        text += f' --ticker-baselang={base}'
                     lines[i] = f'{text} --live={state} --show-host={shlex.quote(host)}{newline}'
                 break
         return ''.join(lines)

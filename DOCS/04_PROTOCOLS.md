@@ -74,6 +74,10 @@ lowercase letters), or `unknown` if unavailable. It is a show-language hint,
 not evidence that the microphone is active, and does not override `--lang`
 for the routed reply.
 
+`--ticker-baselang` on `$chat` and `$chatstream` carries the configurable
+`mira_ticker_baselang` (default `en`) as a hint for the left thoughts ticker.
+It does not translate commentary or change the microphone transcript.
+
 `--comment-command=1` identifies an opt-in WebSocket command event for Mira
 to comment on; it does not authorize re-executing the command. Dog processes
 the original command normally.
