@@ -49,8 +49,7 @@ WORKDIR="/home/gizmore/www"
 LOG="/tmp/mira-start.log"
 LIVE_LOG="/home/mira/mira-live.log"
 TMUX_SESSION="mira-codex"
-ASSIST_DISPATCH="/home/mira/projects/mira-firefox-assist/bridge/assist_dispatch.py"
-ASSIST_LOG="/home/mira/mira-assist-dispatch.log"
+FOXY_EVENTS="/home/mira/projects/mira-firefox-assist/bridge/foxy-events.py"
 
 printf '\033]0;MIRA\007'
 
@@ -85,12 +84,9 @@ fi
 # Book cadence are restored by their canonical rules.
 RESUME_COMMAND="$(printf '%q resume --last --yolo %q' "$CODEX" '$boot')"
 
-# Firefox Assist jobs are written by the native-messaging bridge. Keep one
-# small dispatcher alive across Codex restarts so an approved browser tab can
-# wake Mira without depending on a separate cron entry.
-if [[ -f "$ASSIST_DISPATCH" ]] && ! pgrep -u "$(id -u)" -f 'assist_dispatch.py --watch' >/dev/null; then
-    umask 077
-    nohup python3 "$ASSIST_DISPATCH" --watch >>"$ASSIST_LOG" 2>&1 &
+# Only explicit Firefox Assist start/continue actions generate Foxy handoffs.
+if [[ -f "$FOXY_EVENTS" ]] && ! pgrep -u "$(id -u)" -f '[f]oxy-events.py' >/dev/null; then
+    nohup python3 "$FOXY_EVENTS" >/dev/null 2>&1 &
 fi
 
 if ! tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
