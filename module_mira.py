@@ -86,6 +86,7 @@ class module_mira(GDO_Module):
             GDT_MiraMood('mira_mood').not_null().initial('idle').tooltip('tt_mira_mood'),
             GDT_MiraLiveMode().tooltip('tt_mira_livemode'),
             GDT_User('mira_show_host').tooltip('tt_mira_show_host'),
+            GDT_String('mira_show_title').maxlen(160),
             GDT_String('mira_ticker_baselang').ascii().minlen(2).maxlen(3).pattern(r'^[a-z]{2,3}$').not_null().initial('en').tooltip('tt_mira_ticker_baselang'),
             GDT_Decimal('mira_btx_creds_per_letter').digits(8, 2).precision(2).min(0).max(99999999).not_null().initial('1.00').tooltip('tt_mira_btx_creds_per_letter'),
             GDT_Bool('mira_current_song_enabled').not_null().initial('1').tooltip('tt_mira_current_song_enabled'),
